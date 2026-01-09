@@ -1175,55 +1175,54 @@
             }
         }
         
-        // Mark a stop at current location - CHANGED TO RED LOCATION SYMBOL
+        // Mark a stop at current location - CHANGED TO YELLOW LOCATION SYMBOL
         function markStop(position, stopNumber) {
-            // Create location pin (RED color)
-            const pinHeight = 3;
-            const pinRadius = 0.3;
+            // Create small yellow location symbol (pin shape)
+            const locationPinGroup = new THREE.Group();
             
-            // Pin base (cylinder)
-            const pinGeometry = new THREE.CylinderGeometry(pinRadius * 0.3, pinRadius * 0.5, pinHeight, 8);
-            const pinMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xFF0000, // RED
-                emissive: 0x660000,
-                emissiveIntensity: 0.5,
+            // Pin base (small cylinder - YELLOW color)
+            const pinBaseGeometry = new THREE.CylinderGeometry(0.1, 0.15, 0.8, 8);
+            const pinBaseMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFD700, // YELLOW
+                emissive: 0x996600,
+                emissiveIntensity: 0.4,
                 metalness: 0.3,
                 roughness: 0.4
             });
-            const pin = new THREE.Mesh(pinGeometry, pinMaterial);
-            pin.position.set(position.x, pinHeight / 2, position.z);
-            pin.castShadow = true;
+            const pinBase = new THREE.Mesh(pinBaseGeometry, pinBaseMaterial);
+            pinBase.position.y = 0.4;
+            pinBase.castShadow = true;
+            locationPinGroup.add(pinBase);
             
-            // Pin head (sphere)
-            const headGeometry = new THREE.SphereGeometry(pinRadius * 1.2, 16, 16);
-            const headMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xFF3333, // Bright red
-                emissive: 0x990000,
-                emissiveIntensity: 0.8,
-                metalness: 0.5,
+            // Pin head (small sphere - YELLOW color)
+            const pinHeadGeometry = new THREE.SphereGeometry(0.25, 12, 12);
+            const pinHeadMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFA500, // Bright yellow/orange
+                emissive: 0x996600,
+                emissiveIntensity: 0.6,
+                metalness: 0.4,
                 roughness: 0.3
             });
-            const head = new THREE.Mesh(headGeometry, headMaterial);
-            head.position.set(position.x, pinHeight, position.z);
-            head.castShadow = true;
+            const pinHead = new THREE.Mesh(pinHeadGeometry, pinHeadMaterial);
+            pinHead.position.y = 0.9;
+            pinHead.castShadow = true;
+            locationPinGroup.add(pinHead);
             
-            // Combine pin and head
-            const locationPin = new THREE.Group();
-            locationPin.add(pin);
-            locationPin.add(head);
-            scene.add(locationPin);
+            // Position the entire location symbol
+            locationPinGroup.position.set(position.x, 0, position.z);
+            scene.add(locationPinGroup);
             
-            // Create stop label (simple number)
+            // Create stop label (small number)
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-            canvas.width = 128;
-            canvas.height = 128;
+            canvas.width = 64; // Smaller canvas for smaller label
+            canvas.height = 64;
             
             context.fillStyle = 'rgba(0, 0, 0, 0)';
             context.fillRect(0, 0, canvas.width, canvas.height);
             
-            context.font = 'bold 48px Arial';
-            context.fillStyle = '#FF0000';
+            context.font = 'bold 24px Arial'; // Smaller font
+            context.fillStyle = '#FFD700'; // Yellow text
             context.textAlign = 'center';
             context.textBaseline = 'middle';
             context.fillText(stopNumber, canvas.width / 2, canvas.height / 2);
@@ -1235,8 +1234,8 @@
                 color: 0xFFFFFF
             });
             const sprite = new THREE.Sprite(spriteMaterial);
-            sprite.position.set(position.x, pinHeight + 2, position.z);
-            sprite.scale.set(4, 4, 1);
+            sprite.position.set(position.x, 1.5, position.z);
+            sprite.scale.set(2, 2, 1); // Smaller sprite
             scene.add(sprite);
             
             // Update stops count
@@ -1248,8 +1247,8 @@
             const stopIndex = Math.min(stopNumber - 1, stopNames.length - 1);
             showNotification(`Stop #${stopNumber} marked successfully at ${stopNames[stopIndex]}`);
             
-            // Animate the pin
-            gsap.from(locationPin.scale, {
+            // Animate the location symbol
+            gsap.from(locationPinGroup.scale, {
                 x: 0,
                 y: 0,
                 z: 0,
@@ -1257,9 +1256,9 @@
                 ease: "elastic.out(1.2, 0.5)"
             });
             
-            // Pulsing glow effect
-            gsap.to(head.material, {
-                emissiveIntensity: 1.2,
+            // Pulsing glow effect for the pin head
+            gsap.to(pinHead.material, {
+                emissiveIntensity: 1.0,
                 duration: 0.6,
                 repeat: 3,
                 yoyo: true,
@@ -1267,7 +1266,7 @@
             });
             
             // Store stop objects
-            stopMarkers[stopNumber - 1] = { marker: locationPin, sprite };
+            stopMarkers[stopNumber - 1] = { marker: locationPinGroup, sprite };
             
             // Also animate on mobile device
             animateMobileStop(stopNumber);
@@ -1280,15 +1279,15 @@
             stopElement.className = 'mobile-stop';
             stopElement.style.cssText = `
                 position: absolute;
-                width: 16px;
-                height: 16px;
-                background: #FF0000;
+                width: 12px; /* Smaller */
+                height: 12px; /* Smaller */
+                background: #FFD700; /* Yellow */
                 border-radius: 50%;
-                border: 3px solid #990000;
+                border: 2px solid #FFA000; /* Yellow border */
                 left: ${10 + stopNumber * 12}%;
                 top: 50%;
                 transform: translate(-50%, -50%);
-                box-shadow: 0 0 15px #FF0000;
+                box-shadow: 0 0 10px #FFD700; /* Yellow glow */
             `;
             mobileRoute.appendChild(stopElement);
             
@@ -1480,12 +1479,16 @@
             // Animate stop markers (location pins)
             stopMarkers.forEach((stop, index) => {
                 if (stop && stop.marker) {
-                    // Gentle bobbing animation for location pins
-                    const bobHeight = Math.sin(time * 2 + index) * 0.1;
-                    stop.marker.position.y = 1.5 + bobHeight;
+                    // Gentle bobbing animation for location symbols
+                    const bobHeight = Math.sin(time * 2 + index) * 0.05; // Smaller bobbing
+                    stop.marker.position.y = bobHeight;
                     
-                    // Rotate the pin slightly for visual interest
+                    // Rotate the symbol slightly for visual interest
                     stop.marker.rotation.y += delta * 0.5;
+                    
+                    // Gentle pulsing scale animation
+                    const pulseScale = 1 + Math.sin(time * 3 + index) * 0.05;
+                    stop.marker.scale.setScalar(pulseScale);
                 }
             });
             
