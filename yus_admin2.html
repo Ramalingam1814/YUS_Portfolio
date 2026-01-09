@@ -1,0 +1,1828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YUS Admin - Control Panel</title>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0A0A0A;
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #animation-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 25px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: all;
+            z-index: 51;
+            background: linear-gradient(to bottom, rgba(10, 10, 10, 0.9), transparent);
+        }
+        
+        .page-title {
+            font-size: 2.8rem;
+            font-weight: 900;
+            background: linear-gradient(to right, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 1px;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .control-btn {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            color: #FFD700;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            pointer-events: all;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 215, 0, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 215, 0, 0.2);
+        }
+        
+        .control-btn.success {
+            background: rgba(50, 255, 50, 0.15);
+            border: 1px solid rgba(50, 255, 50, 0.5);
+            color: #32FF32;
+        }
+        
+        .control-btn.success:hover {
+            background: rgba(50, 255, 50, 0.3);
+            box-shadow: 0 10px 25px rgba(50, 255, 50, 0.2);
+        }
+        
+        /* Notification */
+        .notification {
+            position: absolute;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px 30px;
+            backdrop-filter: blur(10px);
+            pointer-events: all;
+            z-index: 52;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            min-width: 400px;
+        }
+        
+        .notification.show {
+            opacity: 1;
+        }
+        
+        .notification-icon {
+            color: #FFD700;
+            font-size: 1.5rem;
+        }
+        
+        .notification-text {
+            color: white;
+            font-size: 1.05rem;
+            flex-grow: 1;
+        }
+        
+        /* Modal */
+        .modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            border-radius: 20px;
+            padding: 40px;
+            width: 600px;
+            backdrop-filter: blur(20px);
+            pointer-events: all;
+            z-index: 60;
+            display: none;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+        }
+        
+        .modal.show {
+            display: block;
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        
+        .modal-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #FFD700;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .close-modal:hover {
+            color: #FF3232;
+        }
+        
+        .modal-content {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            transition: border 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #FFD700;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        /* Admin Portal Info - Left Panel */
+        .admin-portal-info {
+            position: absolute;
+            top: 120px;
+            left: 40px;
+            background: rgba(20, 20, 20, 0.9);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            pointer-events: all;
+            z-index: 51;
+            width: 350px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .admin-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #FFD700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+            padding-bottom: 10px;
+        }
+        
+        .admin-text {
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.6;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        
+        .admin-list {
+            list-style: none;
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .admin-list li {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .admin-list li:before {
+            content: "→";
+            color: #FFD700;
+            position: absolute;
+            left: 0;
+            font-size: 1rem;
+        }
+        
+        /* Scheduling Capabilities - Right Panel */
+        .scheduling-info {
+            position: absolute;
+            top: 120px;
+            right: 40px;
+            background: rgba(20, 20, 20, 0.9);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            pointer-events: all;
+            z-index: 51;
+            width: 350px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        .schedule-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #FFD700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+            padding-bottom: 10px;
+        }
+        
+        .schedule-list {
+            list-style: none;
+            padding-left: 20px;
+        }
+        
+        .schedule-list li {
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 12px;
+            position: relative;
+            padding-left: 25px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .schedule-list li:before {
+            content: "✓";
+            color: #32FF32;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        
+        /* Stats Display */
+        .stats-display {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            display: flex;
+            gap: 15px;
+            pointer-events: all;
+            z-index: 51;
+        }
+        
+        .stat-card {
+            background: rgba(20, 20, 20, 0.85);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            min-width: 150px;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            border-color: rgba(255, 215, 0, 0.5);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(255, 215, 0, 0.2);
+        }
+        
+        .stat-title {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #FFD700;
+            line-height: 1;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .top-bar {
+                padding: 20px;
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .notification {
+                min-width: 300px;
+                padding: 15px 20px;
+                top: 100px;
+            }
+            
+            .admin-portal-info, .scheduling-info, .stats-display {
+                display: none;
+            }
+            
+            .modal {
+                width: 90%;
+                padding: 30px 20px;
+            }
+        }
+    </style>
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Main Content -->
+        <div class="main-content">
+            <div id="animation-container"></div>
+            
+            <div class="ui-overlay">
+                <!-- Top Bar -->
+                <div class="top-bar">
+                    <div class="page-title">YUS ADMIN
+                    </div>
+                </div>
+                
+                <!-- Notification -->
+                <div class="notification" id="notification">
+                    <div class="notification-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="notification-text">
+                        YUS Admin system initialized. Command center active.
+                    </div>
+                </div>
+                
+                <!-- Admin Portal Info (Left Panel) -->
+                <div class="admin-portal-info">
+                    <div class="admin-title">
+                        <i class="fas fa-cogs"></i>
+                        YUS Admin Portal
+                    </div>
+                    
+                    <div class="admin-text">
+                        Centralized web-based control panel for managing the YUS transportation ecosystem with full operational oversight.
+                    </div>
+                    
+                    <div class="admin-text" style="color: #FFA500; font-weight: 600; margin-top: 15px;">
+                        Core Functions:
+                    </div>
+                    
+                    <ul class="admin-list">
+                        <li>Driver registration & management</li>
+                        <li>Bus fleet administration</li>
+                        <li>Route schedule creation</li>
+                        <li>Real-time assignments</li>
+                        <li>Dynamic scheduling</li>
+                    </ul>
+                    
+                    <div class="admin-text" style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">
+                        <i class="fas fa-shield-alt"></i> The Admin Portal serves as the primary command center for all YUS operations.
+                    </div>
+                </div>
+                
+                <!-- Scheduling Capabilities (Right Panel) -->
+                <div class="scheduling-info">
+                    <div class="schedule-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        Scheduling System
+                    </div>
+                    
+                    <div class="admin-text">
+                        Advanced scheduling engine supporting flexible, dynamic route management and resource allocation.
+                    </div>
+                    
+                    <ul class="schedule-list" style="margin-top: 15px;">
+                        <li>Multi-route support per bus</li>
+                        <li>Daily dynamic route selection</li>
+                        <li>Flexible driver-bus assignments</li>
+                        <li>Up/down route management</li>
+                        <li>Real-time adjustments</li>
+                        <li>Conflict-free scheduling</li>
+                    </ul>
+                    
+                    <div class="admin-text" style="margin-top: 20px; font-size: 0.85rem; color: rgba(255, 215, 0, 0.8);">
+                        <i class="fas fa-lightbulb"></i> Ensures optimal resource utilization and operational efficiency.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal for Adding Driver -->
+        <div class="modal" id="add-driver-modal">
+            <div class="modal-header">
+                <div class="modal-title">Add New Driver</div>
+                <button class="close-modal" id="close-driver-modal">&times;</button>
+            </div>
+            <div class="modal-content">
+                Add a new driver to the YUS system. Fill in the driver details below. The driver will receive login credentials via email.
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="driver-name">Full Name</label>
+                <input type="text" class="form-input" id="driver-name" placeholder="Enter driver's full name">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="driver-email">Email Address</label>
+                <input type="email" class="form-input" id="driver-email" placeholder="Enter driver's email">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="driver-phone">Phone Number</label>
+                <input type="text" class="form-input" id="driver-phone" placeholder="Enter driver's phone number">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="driver-bus">Assign Bus</label>
+                <select class="form-input" id="driver-bus">
+                    <option value="">Select a bus</option>
+                    <option value="BUS-001">BUS-001 (Yellow Bus)</option>
+                    <option value="BUS-002">BUS-002 (Blue Bus)</option>
+                    <option value="BUS-003">BUS-003 (Red Bus)</option>
+                    <option value="BUS-004">BUS-004 (Green Bus)</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="control-btn" id="cancel-driver-btn">Cancel</button>
+                <button class="control-btn success" id="save-driver-btn">Save Driver</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Main variables for YUS Admin
+        let scene, camera, renderer, controls;
+        let clock = new THREE.Clock();
+        let buses = [];
+        let particles = [];
+        let dataBeams = [];
+        let isAnimationsActive = true;
+        let hologram = null;
+        let dataNodes = [];
+        let routeVisualizations = [];
+        
+        // Initialize Three.js scene for YUS Admin
+        function init() {
+            // Create scene with dark theme
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0A0A0A);
+            scene.fog = new THREE.Fog(0x0A0A0A, 10, 300);
+            
+            // Create camera
+            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 50, 100);
+            camera.lookAt(0, 0, 0);
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                alpha: true,
+                powerPreference: "high-performance"
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            document.getElementById('animation-container').appendChild(renderer.domElement);
+            
+            // Add orbit controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 30;
+            controls.maxDistance = 300;
+            controls.maxPolarAngle = Math.PI / 2;
+            controls.enablePan = true;
+            controls.screenSpacePanning = true;
+            
+            // Enhanced lighting with YELLOW theme
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xFFD700, 1);
+            directionalLight.position.set(50, 100, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+            
+            const hemisphereLight = new THREE.HemisphereLight(0xFFD700, 0x664400, 0.6);
+            scene.add(hemisphereLight);
+            
+            // Add point lights for dramatic effect
+            const pointLight1 = new THREE.PointLight(0xFFA500, 1, 100);
+            pointLight1.position.set(30, 40, 30);
+            scene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0xFFD700, 0.8, 100);
+            pointLight2.position.set(-30, 40, -30);
+            scene.add(pointLight2);
+            
+            // Create futuristic data center environment
+            createDataCenter();
+            
+            // Create holographic globe
+            createHologram();
+            
+            // Create buses with advanced animations
+            createBuses();
+            
+            // Create particle system
+            createParticleSystem();
+            
+            // Create data beams
+            createDataBeams();
+            
+            // Create floating data nodes
+            createDataNodes();
+            
+            // Create rotating rings
+            createRings();
+            
+            // Create route visualizations
+            createRouteVisualizations();
+            
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize);
+            
+            // Start animation loop
+            animate();
+            
+            // Initialize UI
+            initUI();
+            
+            // Show notification
+            showNotification("YUS Admin Portal initialized. Command center ready for operations.");
+            
+            // Start random data updates
+            startDataUpdates();
+        }
+        
+        // Create futuristic data center
+        function createDataCenter() {
+            // Main platform
+            const platformGeometry = new THREE.CylinderGeometry(40, 50, 2, 64);
+            const platformMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x111111,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: 0x000000,
+                emissiveIntensity: 0.1
+            });
+            const platform = new THREE.Mesh(platformGeometry, platformMaterial);
+            platform.position.y = -2;
+            platform.receiveShadow = true;
+            platform.castShadow = true;
+            scene.add(platform);
+            
+            // Platform edge glow
+            const edgeGeometry = new THREE.TorusGeometry(45, 1, 16, 100);
+            const edgeMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xFFD700,
+                transparent: true,
+                opacity: 0.6,
+                side: THREE.DoubleSide
+            });
+            const edge = new THREE.Mesh(edgeGeometry, edgeMaterial);
+            edge.position.y = -1;
+            edge.rotation.x = Math.PI / 2;
+            scene.add(edge);
+            
+            // Animate edge glow
+            gsap.to(edge.material, {
+                opacity: 0.3,
+                duration: 2,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+            
+            // Create server racks around the platform
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2;
+                const radius = 35;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                
+                createServerRack(x, 0, z, angle + Math.PI/2);
+            }
+            
+            // Create data towers
+            createDataTower(20, 0, 20);
+            createDataTower(-20, 0, -20);
+            createDataTower(20, 0, -20);
+            createDataTower(-20, 0, 20);
+        }
+        
+        // Create server rack
+        function createServerRack(x, y, z, rotation) {
+            const rackGroup = new THREE.Group();
+            
+            // Rack frame
+            const frameGeometry = new THREE.BoxGeometry(3, 12, 2);
+            const frameMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x222222,
+                metalness: 0.9,
+                roughness: 0.1
+            });
+            const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+            frame.castShadow = true;
+            rackGroup.add(frame);
+            
+            // Server units
+            for (let i = 0; i < 6; i++) {
+                const serverGeometry = new THREE.BoxGeometry(2.8, 1.5, 1.8);
+                const serverMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x333333,
+                    metalness: 0.8,
+                    roughness: 0.2
+                });
+                const server = new THREE.Mesh(serverGeometry, serverMaterial);
+                server.position.y = -4.5 + i * 1.8;
+                server.castShadow = true;
+                rackGroup.add(server);
+                
+                // Server lights
+                const lightGeometry = new THREE.BoxGeometry(2.6, 0.3, 0.1);
+                const lightMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0xFFD700,
+                    emissive: 0xFFD700,
+                    emissiveIntensity: 0.5
+                });
+                const light = new THREE.Mesh(lightGeometry, lightMaterial);
+                light.position.y = server.position.y;
+                light.position.z = 1;
+                rackGroup.add(light);
+                
+                // Animate lights
+                gsap.to(light.material, {
+                    emissiveIntensity: 0.2 + Math.random() * 0.8,
+                    duration: 1 + Math.random(),
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut",
+                    delay: i * 0.2
+                });
+            }
+            
+            rackGroup.position.set(x, y + 6, z);
+            rackGroup.rotation.y = rotation;
+            scene.add(rackGroup);
+            
+            return rackGroup;
+        }
+        
+        // Create data tower
+        function createDataTower(x, y, z) {
+            const towerGroup = new THREE.Group();
+            
+            // Tower base
+            const baseGeometry = new THREE.CylinderGeometry(2, 3, 2, 16);
+            const baseMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFD700,
+                metalness: 0.9,
+                roughness: 0.1
+            });
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            base.position.y = 1;
+            base.castShadow = true;
+            towerGroup.add(base);
+            
+            // Tower shaft
+            const shaftGeometry = new THREE.CylinderGeometry(1.5, 2, 15, 16);
+            const shaftMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFD700,
+                metalness: 0.9,
+                roughness: 0.1
+            });
+            const shaft = new THREE.Mesh(shaftGeometry, shaftMaterial);
+            shaft.position.y = 9.5;
+            shaft.castShadow = true;
+            towerGroup.add(shaft);
+            
+            // Tower top
+            const topGeometry = new THREE.CylinderGeometry(1, 1.5, 3, 16);
+            const topMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFFA500,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: 0xFFA500,
+                emissiveIntensity: 0.3
+            });
+            const top = new THREE.Mesh(topGeometry, topMaterial);
+            top.position.y = 17;
+            top.castShadow = true;
+            towerGroup.add(top);
+            
+            // Antenna
+            const antennaGeometry = new THREE.CylinderGeometry(0.2, 0.3, 5, 8);
+            const antennaMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xFFA500,
+                emissive: 0xFFA500,
+                emissiveIntensity: 0.5
+            });
+            const antenna = new THREE.Mesh(antennaGeometry, antennaMaterial);
+            antenna.position.y = 20.5;
+            towerGroup.add(antenna);
+            
+            towerGroup.position.set(x, y, z);
+            scene.add(towerGroup);
+            
+            // Add pulsing light
+            const pointLight = new THREE.PointLight(0xFFA500, 1, 50);
+            pointLight.position.set(x, 20, z);
+            scene.add(pointLight);
+            
+            // Animate light
+            gsap.to(pointLight, {
+                intensity: 2,
+                duration: 1.5,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+            
+            return towerGroup;
+        }
+        
+        // Create holographic globe
+        function createHologram() {
+            const hologramGroup = new THREE.Group();
+            
+            // Globe
+            const globeGeometry = new THREE.SphereGeometry(15, 32, 32);
+            const globeMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00FFFF,
+                transparent: true,
+                opacity: 0.3,
+                wireframe: true,
+                wireframeLinewidth: 2
+            });
+            const globe = new THREE.Mesh(globeGeometry, globeMaterial);
+            hologramGroup.add(globe);
+            
+            // Inner globe
+            const innerGeometry = new THREE.SphereGeometry(12, 24, 24);
+            const innerMaterial = new THREE.MeshBasicMaterial({
+                color: 0xFFD700,
+                transparent: true,
+                opacity: 0.2,
+                side: THREE.DoubleSide
+            });
+            const innerGlobe = new THREE.Mesh(innerGeometry, innerMaterial);
+            hologramGroup.add(innerGlobe);
+            
+            // Rotating rings
+            for (let i = 0; i < 3; i++) {
+                const ringGeometry = new THREE.TorusGeometry(15 + i * 2, 0.5, 8, 100);
+                const ringMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xFFD700,
+                    transparent: true,
+                    opacity: 0.6,
+                    side: THREE.DoubleSide
+                });
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                ring.rotation.x = Math.PI / 2;
+                ring.rotation.z = (i * Math.PI) / 3;
+                hologramGroup.add(ring);
+                
+                // Animate ring
+                gsap.to(ring.rotation, {
+                    y: Math.PI * 2,
+                    duration: 20 + i * 5,
+                    repeat: -1,
+                    ease: "none"
+                });
+                
+                gsap.to(ring.material, {
+                    opacity: 0.2,
+                    duration: 3 + i,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut"
+                });
+            }
+            
+            // Data points on globe (simulating bus locations)
+            for (let i = 0; i < 12; i++) {
+                const phi = Math.acos(-1 + (2 * i) / 12);
+                const theta = Math.sqrt(12 * Math.PI) * phi;
+                
+                const x = 15 * Math.cos(theta) * Math.sin(phi);
+                const y = 15 * Math.sin(theta) * Math.sin(phi);
+                const z = 15 * Math.cos(phi);
+                
+                const pointGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+                const pointMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xFFD700,
+                    emissive: 0xFFD700,
+                    emissiveIntensity: 0.8
+                });
+                const point = new THREE.Mesh(pointGeometry, pointMaterial);
+                point.position.set(x, y, z);
+                hologramGroup.add(point);
+                
+                // Store point reference
+                point.userData = {
+                    originalPosition: new THREE.Vector3(x, y, z),
+                    speed: 0.5 + Math.random() * 0.5
+                };
+            }
+            
+            hologramGroup.position.y = 15;
+            scene.add(hologramGroup);
+            hologram = hologramGroup;
+            
+            // Animate hologram
+            gsap.to(hologram.rotation, {
+                y: Math.PI * 2,
+                duration: 60,
+                repeat: -1,
+                ease: "none"
+            });
+        }
+        
+        // Create buses with advanced animations
+        function createBuses() {
+            const busColors = [0xFFD700, 0xFFA500, 0xFF8C00, 0xFF6B00, 0xFF4500];
+            
+            for (let i = 0; i < 8; i++) {
+                const busGroup = new THREE.Group();
+                
+                // Bus body
+                const busGeometry = new THREE.BoxGeometry(3, 2, 6);
+                const busMaterial = new THREE.MeshStandardMaterial({ 
+                    color: busColors[i % busColors.length],
+                    metalness: 0.7,
+                    roughness: 0.3,
+                    emissive: 0x000000,
+                    emissiveIntensity: 0.1
+                });
+                const bus = new THREE.Mesh(busGeometry, busMaterial);
+                bus.castShadow = true;
+                
+                // Bus windows
+                const windowGeometry = new THREE.BoxGeometry(2.8, 0.8, 5.8);
+                const windowMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0x88CCFF,
+                    transparent: true,
+                    opacity: 0.9,
+                    roughness: 0.1,
+                    metalness: 0.9
+                });
+                const windows = new THREE.Mesh(windowGeometry, windowMaterial);
+                windows.position.y = 0.6;
+                
+                // Wheels
+                const wheelGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 12);
+                const wheelMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x222222,
+                    metalness: 0.8,
+                    roughness: 0.2
+                });
+                
+                const wheelPositions = [
+                    { x: -1, z: 2 },
+                    { x: 1, z: 2 },
+                    { x: -1, z: -2 },
+                    { x: 1, z: -2 }
+                ];
+                
+                wheelPositions.forEach(pos => {
+                    const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                    wheel.rotation.z = Math.PI / 2;
+                    wheel.position.set(pos.x, -0.9, pos.z);
+                    wheel.castShadow = true;
+                    busGroup.add(wheel);
+                });
+                
+                busGroup.add(bus);
+                busGroup.add(windows);
+                busGroup.position.y = 1;
+                
+                // Position buses on circular paths
+                const angle = (i / 8) * Math.PI * 2;
+                const radius = 30 + (i % 4) * 5;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                
+                busGroup.position.set(x, 1, z);
+                
+                // Store bus data
+                busGroup.userData = {
+                    id: `BUS-${(i+1).toString().padStart(3, '0')}`,
+                    speed: 0.5 + Math.random() * 0.3,
+                    direction: Math.random() > 0.5 ? 1 : -1,
+                    angle: angle,
+                    radius: radius,
+                    wheels: busGroup.children.filter(child => 
+                        child.geometry === wheelGeometry
+                    ),
+                    heightOffset: Math.random() * 0.5,
+                    routeId: i % 4 // Assign to one of 4 routes
+                };
+                
+                buses.push(busGroup);
+                scene.add(busGroup);
+                
+                // Add pulsing light on top
+                const lightGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+                const lightMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0xFFD700,
+                    emissive: 0xFFD700,
+                    emissiveIntensity: 0.8
+                });
+                const light = new THREE.Mesh(lightGeometry, lightMaterial);
+                light.position.y = 1.5;
+                busGroup.add(light);
+                
+                // Animate light
+                gsap.to(light.material, {
+                    emissiveIntensity: 0.2,
+                    duration: 1 + Math.random(),
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut"
+                });
+                
+                // Create data trail for each bus
+                createBusDataTrail(busGroup);
+            }
+        }
+        
+        // Create data trail for buses
+        function createBusDataTrail(busGroup) {
+            const trailGroup = new THREE.Group();
+            
+            for (let i = 0; i < 5; i++) {
+                const trailGeometry = new THREE.SphereGeometry(0.2, 6, 6);
+                const trailMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xFFD700,
+                    transparent: true,
+                    opacity: 0.5 - (i * 0.1)
+                });
+                const trail = new THREE.Mesh(trailGeometry, trailMaterial);
+                
+                trail.userData = {
+                    index: i,
+                    maxOffset: 0.5
+                };
+                
+                trailGroup.add(trail);
+            }
+            
+            busGroup.add(trailGroup);
+            busGroup.userData.trail = trailGroup;
+        }
+        
+        // Create particle system
+        function createParticleSystem() {
+            const particleCount = 1500;
+            const particlesGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
+            
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                
+                // Random positions in a sphere
+                const radius = 40 + Math.random() * 30;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                
+                positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+                positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                positions[i3 + 2] = radius * Math.cos(phi);
+                
+                // Yellow colors with variations
+                colors[i3] = 1.0; // R
+                colors[i3 + 1] = 0.7 + Math.random() * 0.3; // G
+                colors[i3 + 2] = Math.random() * 0.2; // B
+                
+                // Random sizes
+                sizes[i] = 0.2 + Math.random() * 1.0;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            particlesGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.7,
+                blending: THREE.AdditiveBlending,
+                sizeAttenuation: true
+            });
+            
+            const particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particleSystem);
+            particles.push(particleSystem);
+            
+            // Store references for animation
+            particleSystem.userData = {
+                originalPositions: positions.slice(),
+                velocities: new Array(particleCount).fill().map(() => ({
+                    x: (Math.random() - 0.5) * 0.02,
+                    y: (Math.random() - 0.5) * 0.02,
+                    z: (Math.random() - 0.5) * 0.02
+                }))
+            };
+        }
+        
+        // Create data beams
+        function createDataBeams() {
+            // Create beams between data towers and center
+            const beamPositions = [
+                { start: new THREE.Vector3(20, 20, 20), end: new THREE.Vector3(0, 15, 0) },
+                { start: new THREE.Vector3(-20, 20, -20), end: new THREE.Vector3(0, 15, 0) },
+                { start: new THREE.Vector3(20, 20, -20), end: new THREE.Vector3(0, 15, 0) },
+                { start: new THREE.Vector3(-20, 20, 20), end: new THREE.Vector3(0, 15, 0) }
+            ];
+            
+            beamPositions.forEach(pos => {
+                createBeam(pos.start, pos.end);
+            });
+            
+            // Create additional beams between towers
+            createBeam(new THREE.Vector3(20, 20, 20), new THREE.Vector3(-20, 20, -20));
+            createBeam(new THREE.Vector3(20, 20, -20), new THREE.Vector3(-20, 20, 20));
+            
+            // Create vertical beams
+            for (let i = 0; i < 4; i++) {
+                const angle = (i / 4) * Math.PI * 2;
+                const radius = 25;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                
+                createBeam(
+                    new THREE.Vector3(x, 0, z),
+                    new THREE.Vector3(x, 25, z)
+                );
+            }
+        }
+        
+        // Create a single beam
+        function createBeam(start, end) {
+            const direction = new THREE.Vector3().subVectors(end, start).normalize();
+            const distance = start.distanceTo(end);
+            
+            // Create beam cylinder
+            const geometry = new THREE.CylinderGeometry(0.08, 0.08, distance, 8, 1, true);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0xFFD700,
+                transparent: true,
+                opacity: 0.6,
+                side: THREE.DoubleSide
+            });
+            
+            const beam = new THREE.Mesh(geometry, material);
+            
+            // Position and rotate beam
+            beam.position.copy(start).add(direction.clone().multiplyScalar(distance / 2));
+            beam.lookAt(end);
+            beam.rotateX(Math.PI / 2);
+            
+            scene.add(beam);
+            dataBeams.push(beam);
+            
+            // Animate beam with pulsing effect
+            gsap.to(beam.material, {
+                opacity: 0.2,
+                duration: 1.5,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut",
+                delay: Math.random() * 2
+            });
+        }
+        
+        // Create data nodes
+        function createDataNodes() {
+            for (let i = 0; i < 16; i++) {
+                const angle = (i / 16) * Math.PI * 2;
+                const radius = 25 + Math.random() * 10;
+                const height = 8 + Math.random() * 15;
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                
+                // Choose random shape
+                let nodeGeometry;
+                const shapeType = Math.floor(Math.random() * 4);
+                
+                switch(shapeType) {
+                    case 0:
+                        nodeGeometry = new THREE.OctahedronGeometry(0.6 + Math.random() * 0.4, 0);
+                        break;
+                    case 1:
+                        nodeGeometry = new THREE.TetrahedronGeometry(0.6 + Math.random() * 0.4, 0);
+                        break;
+                    case 2:
+                        nodeGeometry = new THREE.IcosahedronGeometry(0.6 + Math.random() * 0.4, 0);
+                        break;
+                    case 3:
+                        nodeGeometry = new THREE.BoxGeometry(1, 1, 1);
+                        break;
+                }
+                
+                const nodeMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xFFD700,
+                    transparent: true,
+                    opacity: 0.8,
+                    wireframe: Math.random() > 0.5,
+                    emissive: 0xFFD700,
+                    emissiveIntensity: 0.3
+                });
+                
+                const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+                node.position.set(x, height, z);
+                scene.add(node);
+                dataNodes.push(node);
+                
+                // Animate node
+                const floatHeight = height + 3 + Math.random() * 4;
+                const floatDuration = 4 + Math.random() * 4;
+                
+                gsap.to(node.position, {
+                    y: floatHeight,
+                    duration: floatDuration,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut",
+                    delay: Math.random() * 2
+                });
+                
+                gsap.to(node.rotation, {
+                    x: Math.PI * 2,
+                    y: Math.PI * 2,
+                    z: Math.PI * 2,
+                    duration: 20 + Math.random() * 20,
+                    repeat: -1,
+                    ease: "none"
+                });
+                
+                gsap.to(node.scale, {
+                    x: 1.4,
+                    y: 1.4,
+                    z: 1.4,
+                    duration: 2 + Math.random() * 2,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut"
+                });
+                
+                // Create connections between nodes
+                if (i > 0) {
+                    const prevNode = dataNodes[i-1];
+                    createNodeConnection(prevNode, node);
+                }
+            }
+        }
+        
+        // Create connection between nodes
+        function createNodeConnection(node1, node2) {
+            const start = node1.position.clone();
+            const end = node2.position.clone();
+            
+            const direction = new THREE.Vector3().subVectors(end, start);
+            const distance = start.distanceTo(end);
+            
+            if (distance < 35) { // Only connect if nodes are close enough
+                const geometry = new THREE.CylinderGeometry(0.03, 0.03, distance, 4, 1, true);
+                const material = new THREE.MeshBasicMaterial({
+                    color: 0xFFA500,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                
+                const connection = new THREE.Mesh(geometry, material);
+                connection.position.copy(start).add(direction.clone().multiplyScalar(0.5));
+                connection.lookAt(end);
+                connection.rotateX(Math.PI / 2);
+                
+                scene.add(connection);
+                
+                // Animate connection
+                gsap.to(connection.material, {
+                    opacity: 0.1,
+                    duration: 2 + Math.random() * 2,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut"
+                });
+            }
+        }
+        
+        // Create rotating rings
+        function createRings() {
+            for (let i = 0; i < 4; i++) {
+                const ringGeometry = new THREE.TorusGeometry(20 + i * 8, 0.3, 8, 100);
+                const ringMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xFFD700,
+                    transparent: true,
+                    opacity: 0.3,
+                    side: THREE.DoubleSide
+                });
+                
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.y = 5 + i * 6;
+                scene.add(ring);
+                
+                // Animate ring
+                const rotationSpeed = 25 + i * 8;
+                const rotationDirection = Math.random() > 0.5 ? 1 : -1;
+                
+                gsap.to(ring.rotation, {
+                    z: Math.PI * 2 * rotationDirection,
+                    duration: rotationSpeed,
+                    repeat: -1,
+                    ease: "none"
+                });
+                
+                gsap.to(ring.position, {
+                    y: 5 + i * 6 + 4,
+                    duration: 5 + i * 2,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut"
+                });
+                
+                gsap.to(ring.material, {
+                    opacity: 0.1,
+                    duration: 3 + i,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut"
+                });
+            }
+        }
+        
+        // Create route visualizations
+        function createRouteVisualizations() {
+            const routeColors = [0xFFD700, 0xFFA500, 0xFF8C00, 0xFF6B00];
+            
+            for (let i = 0; i < 4; i++) {
+                const routeGroup = new THREE.Group();
+                const points = [];
+                
+                // Create route path (spiral shape)
+                for (let j = 0; j < 20; j++) {
+                    const angle = (j / 20) * Math.PI * 4;
+                    const radius = 25 + i * 3;
+                    const height = 5 + j * 1.5;
+                    
+                    const x = Math.cos(angle + i) * radius;
+                    const z = Math.sin(angle + i) * radius;
+                    
+                    points.push(new THREE.Vector3(x, height, z));
+                    
+                    // Create route node
+                    const nodeGeometry = new THREE.SphereGeometry(0.4, 6, 6);
+                    const nodeMaterial = new THREE.MeshBasicMaterial({
+                        color: routeColors[i],
+                        transparent: true,
+                        opacity: 0.7
+                    });
+                    
+                    const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+                    node.position.set(x, height, z);
+                    routeGroup.add(node);
+                    
+                    // Animate node
+                    gsap.to(node.scale, {
+                        x: 1.5,
+                        y: 1.5,
+                        z: 1.5,
+                        duration: 2,
+                        repeat: -1,
+                        yoyo: true,
+                        ease: "sine.inOut",
+                        delay: j * 0.1
+                    });
+                }
+                
+                // Create route line
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+                const lineMaterial = new THREE.LineBasicMaterial({
+                    color: routeColors[i],
+                    transparent: true,
+                    opacity: 0.4,
+                    linewidth: 2
+                });
+                
+                const routeLine = new THREE.Line(lineGeometry, lineMaterial);
+                routeGroup.add(routeLine);
+                
+                scene.add(routeGroup);
+                routeVisualizations.push(routeGroup);
+            }
+        }
+        
+        // Start random data updates
+        function startDataUpdates() {
+            setInterval(() => {
+                // Update stats with random values
+                document.getElementById('active-buses').textContent = 
+                    8 + Math.floor(Math.random() * 4);
+                document.getElementById('system-load').textContent = 
+                    (60 + Math.floor(Math.random() * 15)) + '%';
+                document.getElementById('data-flow').textContent = 
+                    (20 + Math.floor(Math.random() * 10)) + 'G/s';
+            }, 3000);
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const notificationIcon = document.querySelector('.notification-icon i');
+            const notificationText = document.querySelector('.notification-text');
+            
+            // Set icon based on type
+            if (type === 'error') {
+                notificationIcon.className = 'fas fa-exclamation-circle';
+                notification.style.borderColor = 'rgba(255, 50, 50, 0.5)';
+            } else if (type === 'success') {
+                notificationIcon.className = 'fas fa-check-circle';
+                notification.style.borderColor = 'rgba(50, 255, 50, 0.5)';
+            } else {
+                notificationIcon.className = 'fas fa-info-circle';
+                notification.style.borderColor = 'rgba(255, 215, 0, 0.5)';
+            }
+            
+            notificationText.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Toggle all animations
+        function toggleAnimations() {
+            const btn = document.getElementById('toggle-animations-btn');
+            
+            if (isAnimationsActive) {
+                // Stop animations
+                btn.innerHTML = '<i class="fas fa-play-circle"></i> Start Animations';
+                showNotification("All animations paused.");
+                
+                // Stop all GSAP animations
+                gsap.globalTimeline.pause();
+                isAnimationsActive = false;
+            } else {
+                // Start animations
+                btn.innerHTML = '<i class="fas fa-stop-circle"></i> Stop Animations';
+                showNotification("All animations resumed.");
+                
+                // Resume all GSAP animations
+                gsap.globalTimeline.resume();
+                isAnimationsActive = true;
+            }
+        }
+        
+        // Show add driver modal
+        function showAddDriverModal() {
+            document.getElementById('add-driver-modal').classList.add('show');
+        }
+        
+        // Initialize UI event handlers
+        function initUI() {
+            // Control buttons
+            document.getElementById('add-driver-btn').addEventListener('click', showAddDriverModal);
+            document.getElementById('toggle-animations-btn').addEventListener('click', toggleAnimations);
+            
+            // Modal controls
+            document.getElementById('close-driver-modal').addEventListener('click', function() {
+                document.getElementById('add-driver-modal').classList.remove('show');
+            });
+            
+            document.getElementById('cancel-driver-btn').addEventListener('click', function() {
+                document.getElementById('add-driver-modal').classList.remove('show');
+            });
+            
+            document.getElementById('save-driver-btn').addEventListener('click', function() {
+                const name = document.getElementById('driver-name').value;
+                const email = document.getElementById('driver-email').value;
+                const bus = document.getElementById('driver-bus').value;
+                
+                if (!name || !email || !bus) {
+                    showNotification("Please fill in all required fields.", 'error');
+                    return;
+                }
+                
+                document.getElementById('add-driver-modal').classList.remove('show');
+                
+                // Reset form
+                document.getElementById('driver-name').value = '';
+                document.getElementById('driver-email').value = '';
+                document.getElementById('driver-phone').value = '';
+                document.getElementById('driver-bus').value = '';
+                
+                showNotification(`Driver ${name} added to bus ${bus}.`, 'success');
+                
+                // Add visual feedback in the 3D scene
+                createDriverAdditionEffect();
+            });
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // N key for new driver
+                if (e.code === 'KeyN' && e.ctrlKey) {
+                    e.preventDefault();
+                    showAddDriverModal();
+                }
+                
+                // Escape key to close modals
+                if (e.code === 'Escape') {
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        modal.classList.remove('show');
+                    });
+                }
+                
+                // Space to toggle animations
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    toggleAnimations();
+                }
+            });
+        }
+        
+        // Create visual effect when driver is added
+        function createDriverAdditionEffect() {
+            // Create a burst of particles at the center
+            const particleCount = 80;
+            const particles = [];
+            
+            for (let i = 0; i < particleCount; i++) {
+                const geometry = new THREE.SphereGeometry(0.15, 6, 6);
+                const material = new THREE.MeshBasicMaterial({
+                    color: 0x32FF32,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const particle = new THREE.Mesh(geometry, material);
+                
+                // Random direction
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 0.8 + Math.random() * 0.7;
+                
+                particle.userData = {
+                    velocity: new THREE.Vector3(
+                        Math.cos(angle) * speed,
+                        (Math.random() - 0.5) * speed,
+                        Math.sin(angle) * speed
+                    ),
+                    life: 1.0
+                };
+                
+                particle.position.set(0, 15, 0);
+                scene.add(particle);
+                particles.push(particle);
+            }
+            
+            // Animate particles
+            const startTime = Date.now();
+            const duration = 2000; // 2 seconds
+            
+            function animateParticles() {
+                const elapsed = Date.now() - startTime;
+                const progress = elapsed / duration;
+                
+                if (progress < 1) {
+                    particles.forEach(particle => {
+                        particle.position.add(particle.userData.velocity);
+                        particle.userData.life -= 0.02;
+                        particle.material.opacity = particle.userData.life;
+                        particle.scale.multiplyScalar(0.97);
+                    });
+                    
+                    requestAnimationFrame(animateParticles);
+                } else {
+                    // Remove particles
+                    particles.forEach(particle => {
+                        scene.remove(particle);
+                    });
+                }
+            }
+            
+            animateParticles();
+            
+            // Add a glow effect
+            const glowGeometry = new THREE.SphereGeometry(5, 16, 16);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x32FF32,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.BackSide
+            });
+            
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            glow.position.set(0, 15, 0);
+            scene.add(glow);
+            
+            // Animate glow
+            gsap.to(glow.scale, {
+                x: 2,
+                y: 2,
+                z: 2,
+                duration: 0.5,
+                ease: "power2.out",
+                onComplete: () => {
+                    gsap.to(glow.material, {
+                        opacity: 0,
+                        duration: 0.5,
+                        onComplete: () => scene.remove(glow)
+                    });
+                }
+            });
+        }
+        
+        // Handle window resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Main animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            const time = clock.elapsedTime;
+            
+            // Update controls
+            controls.update();
+            
+            // Update buses
+            buses.forEach(bus => {
+                if (!bus.userData) return;
+                
+                // Move bus in circular path with vertical oscillation
+                bus.userData.angle += bus.userData.speed * 0.01 * bus.userData.direction;
+                
+                const x = Math.cos(bus.userData.angle) * bus.userData.radius;
+                const z = Math.sin(bus.userData.angle) * bus.userData.radius;
+                const y = 1 + Math.sin(time * 2 + bus.userData.angle) * bus.userData.heightOffset;
+                
+                bus.position.x = x;
+                bus.position.y = y;
+                bus.position.z = z;
+                
+                // Rotate bus to face direction
+                const lookAheadAngle = bus.userData.angle + 0.1;
+                const lookAheadX = Math.cos(lookAheadAngle) * bus.userData.radius;
+                const lookAheadZ = Math.sin(lookAheadAngle) * bus.userData.radius;
+                
+                const directionX = lookAheadX - x;
+                const directionZ = lookAheadZ - z;
+                
+                bus.rotation.y = Math.atan2(directionX, directionZ);
+                
+                // Animate wheels
+                if (bus.userData.wheels) {
+                    bus.userData.wheels.forEach(wheel => {
+                        wheel.rotation.x -= bus.userData.speed * 0.2;
+                    });
+                }
+                
+                // Update data trail
+                if (bus.userData.trail) {
+                    bus.userData.trail.children.forEach((trail, index) => {
+                        const offset = (index + 1) * 0.3;
+                        const trailAngle = bus.userData.angle - offset * 0.05;
+                        
+                        const trailX = Math.cos(trailAngle) * bus.userData.radius;
+                        const trailZ = Math.sin(trailAngle) * bus.userData.radius;
+                        const trailY = 1 + Math.sin(time * 2 + trailAngle) * bus.userData.heightOffset;
+                        
+                        trail.position.x = trailX - x;
+                        trail.position.y = trailY - y;
+                        trail.position.z = trailZ - z;
+                        
+                        // Fade out older trails
+                        trail.material.opacity = 0.5 - (index * 0.1);
+                    });
+                }
+            });
+            
+            // Update particles
+            if (particles.length > 0) {
+                particles.forEach(particleSystem => {
+                    const positions = particleSystem.geometry.attributes.position.array;
+                    const velocities = particleSystem.userData.velocities;
+                    
+                    for (let i = 0; i < positions.length / 3; i++) {
+                        const i3 = i * 3;
+                        
+                        // Update position with velocity
+                        positions[i3] += velocities[i].x;
+                        positions[i3 + 1] += velocities[i].y;
+                        positions[i3 + 2] += velocities[i].z;
+                        
+                        // Add some random movement
+                        positions[i3] += (Math.random() - 0.5) * 0.015;
+                        positions[i3 + 1] += (Math.random() - 0.5) * 0.015;
+                        positions[i3 + 2] += (Math.random() - 0.5) * 0.015;
+                        
+                        // Boundary check - reset particle if too far
+                        const distance = Math.sqrt(
+                            positions[i3] * positions[i3] + 
+                            positions[i3 + 1] * positions[i3 + 1] + 
+                            positions[i3 + 2] * positions[i3 + 2]
+                        );
+                        
+                        if (distance > 70) {
+                            // Reset to random position near center
+                            const radius = 40 + Math.random() * 15;
+                            const theta = Math.random() * Math.PI * 2;
+                            const phi = Math.acos(2 * Math.random() - 1);
+                            
+                            positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
+                            positions[i3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+                            positions[i3 + 2] = radius * Math.cos(phi);
+                        }
+                    }
+                    
+                    particleSystem.geometry.attributes.position.needsUpdate = true;
+                });
+            }
+            
+            // Update hologram points
+            if (hologram) {
+                hologram.children.forEach(child => {
+                    if (child.userData && child.userData.originalPosition) {
+                        // Make points orbit around the globe
+                        const timeOffset = time * child.userData.speed;
+                        const radius = 15;
+                        
+                        const x = child.userData.originalPosition.x + Math.sin(timeOffset) * 2;
+                        const y = child.userData.originalPosition.y + Math.cos(timeOffset) * 2;
+                        const z = child.userData.originalPosition.z + Math.sin(timeOffset * 0.7) * 2;
+                        
+                        child.position.set(x, y, z);
+                        
+                        // Pulsing scale
+                        const scale = 1 + Math.sin(time * 3) * 0.3;
+                        child.scale.setScalar(scale);
+                        
+                        // Color variation
+                        child.material.color.setHSL(
+                            0.1 + Math.sin(time * 0.5) * 0.05,
+                            0.8,
+                            0.5
+                        );
+                    }
+                });
+            }
+            
+            // Update data nodes with enhanced animation
+            dataNodes.forEach((node, index) => {
+                // Add subtle rotation
+                node.rotation.x += 0.008;
+                node.rotation.y += 0.008;
+                
+                // Pulsing effect
+                const pulse = Math.sin(time * 1.5 + index * 0.3) * 0.15 + 1;
+                node.scale.setScalar(pulse);
+                
+                // Color variation
+                if (node.material.color) {
+                    const hue = 0.1 + Math.sin(time * 0.3 + index * 0.1) * 0.08;
+                    node.material.color.setHSL(hue, 0.8, 0.6);
+                }
+                
+                // Float up and down
+                node.position.y += Math.sin(time * 0.5 + index) * 0.005;
+            });
+            
+            // Update route visualizations
+            routeVisualizations.forEach((route, index) => {
+                route.rotation.y += 0.002 * (index + 1);
+                
+                // Pulse route nodes
+                route.children.forEach((child, i) => {
+                    if (child.type === 'Mesh' && child.geometry.type === 'SphereGeometry') {
+                        child.material.opacity = 0.5 + Math.sin(time * 2 + i * 0.2) * 0.3;
+                    }
+                });
+            });
+            
+            // Render scene
+            renderer.render(scene, camera);
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
