@@ -770,7 +770,7 @@
             // Main road - straight path through campus
             const roadGeometry = new THREE.PlaneGeometry(80, 10);
             const roadMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x333333,
+                color: "black",
                 side: THREE.DoubleSide,
                 roughness: 0.9,
                 metalness: 0.1
@@ -784,7 +784,7 @@
             // Road markings
             const markingsGeometry = new THREE.PlaneGeometry(2, 0.3);
             const markingsMaterial = new THREE.MeshBasicMaterial({ 
-                color: 0xFFD700,
+                color: "white",
                 side: THREE.DoubleSide
             });
             
@@ -1197,7 +1197,7 @@
             // Pin head (small sphere - YELLOW color)
             const pinHeadGeometry = new THREE.SphereGeometry(0.25, 12, 12);
             const pinHeadMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xFFA500, // Bright yellow/orange
+                color: 0xFFD700, // Bright yellow/orange
                 emissive: 0x996600,
                 emissiveIntensity: 0.6,
                 metalness: 0.4,
