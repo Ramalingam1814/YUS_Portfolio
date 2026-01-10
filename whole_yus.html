@@ -1,0 +1,1865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YUS - Yelloh Bus | Smart College Transportation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --yellow: #FFD700;
+            --yellow-bright: #FFC700;
+            --black: #000000;
+            --dark: #0a0a0a;
+            --gray: #1a1a1a;
+            --white: #ffffff;
+            --accent: #FF6B00;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--yellow);
+            border-radius: 4px;
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.8s ease;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .loader {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid rgba(255, 215, 0, 0.1);
+            border-top-color: var(--yellow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loader:nth-child(2) {
+            border-top-color: var(--accent);
+            animation-delay: 0.3s;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 30px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--yellow);
+            letter-spacing: 2px;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 25px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            background: rgba(0, 0, 0, 0.7);
+            border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        header.scrolled {
+            padding: 18px 60px;
+            background: rgba(0, 0, 0, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo {
+            font-family: 'Space Mono', monospace;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--yellow);
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--yellow), var(--accent));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-size: 20px;
+        }
+
+        nav {
+            display: flex;
+            gap: 45px;
+        }
+
+        nav a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        nav a::before {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--yellow);
+            transition: width 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--yellow);
+        }
+
+        nav a:hover::before {
+            width: 100%;
+        }
+
+        .header-btn {
+            padding: 12px 28px;
+            background: var(--yellow);
+            color: #000;
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Manrope', sans-serif;
+            letter-spacing: 0.5px;
+        }
+
+        .header-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #canvas3d {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.2) 100%);
+            z-index: 2;
+        }
+
+        /* Highway Style Bus Numbers */
+        .highway-bus-numbers {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            z-index: 150;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 20px 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+            backdrop-filter: blur(10px);
+            border-top: 3px solid var(--yellow);
+        }
+
+        .bus-number-highway {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--black), var(--gray));
+            border: 3px solid var(--yellow);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--yellow);
+            font-size: 32px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5),
+                        0 0 20px rgba(255,215,0,0.3);
+        }
+
+        .bus-number-highway::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,215,0,0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+        }
+
+        .bus-number-highway:hover::before {
+            left: 150%;
+        }
+
+        .bus-number-highway:hover {
+            transform: translateY(-10px) scale(1.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7),
+                        0 0 40px rgba(255,215,0,0.5);
+            background: linear-gradient(135deg, var(--yellow), var(--accent));
+            color: #000;
+        }
+
+        .bus-number-highway.active {
+            animation: glow 2s infinite;
+            background: linear-gradient(135deg, var(--yellow), var(--accent));
+            color: #000;
+            border-color: #fff;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 20px 40px rgba(0,0,0,0.7),
+                            0 0 40px rgba(255,215,0,0.5);
+            }
+            50% {
+                box-shadow: 0 20px 40px rgba(0,0,0,0.7),
+                            0 0 60px rgba(255,215,0,0.8),
+                            0 0 80px rgba(255,215,0,0.6);
+            }
+        }
+
+        /* Small Current Stop Board with Stick - Right Corner */
+        .current-stop-board {
+            position: absolute;
+            bottom: 180px;
+            right: 60px;
+            z-index: 5;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            animation: signFloat 6s ease-in-out infinite;
+            opacity: 0.9;
+        }
+
+        @keyframes signFloat {
+            0%, 100% {
+                transform: translateY(0px) rotateX(5deg);
+            }
+            50% {
+                transform: translateY(-10px) rotateX(-5deg);
+            }
+        }
+
+        .sign-post {
+            width: 8px;
+            height: 120px;
+            background: linear-gradient(to bottom, #555, #333, #111);
+            position: absolute;
+            bottom: -120px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 4px 4px 0 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 1;
+        }
+
+        .sign-post::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 15px;
+            height: 8px;
+            background: #666;
+            border-radius: 2px 2px 0 0;
+        }
+
+        .sign-board {
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.95), rgba(0, 0, 0, 0.95));
+            border-radius: 12px;
+            padding: 20px 25px;
+            position: relative;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.8),
+                        inset 0 1px 0 rgba(255,255,255,0.1),
+                        0 0 0 1px rgba(255,215,0,0.3),
+                        0 0 15px rgba(255,215,0,0.2);
+            min-width: 250px;
+            border: 2px solid var(--yellow);
+            transform-style: preserve-3d;
+            overflow: hidden;
+            backdrop-filter: blur(8px);
+            z-index: 2;
+        }
+
+        .sign-board::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,215,0,0.05) 50%, transparent 70%);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .board-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--yellow);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 8px rgba(255,215,0,0.5);
+            position: relative;
+        }
+
+        .board-title::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--yellow), transparent);
+        }
+
+        .stop-display {
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, rgba(255,215,0,0.1), rgba(255,107,0,0.1));
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid rgba(255,215,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stop-display::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(45deg, var(--yellow), var(--accent), var(--yellow));
+            border-radius: 8px;
+            z-index: -1;
+            opacity: 0.1;
+            animation: borderGlow 3s linear infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% {
+                opacity: 0.1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .stop-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            opacity: 0.9;
+        }
+
+        .stop-detail {
+            text-align: center;
+            padding: 8px;
+            background: rgba(255,215,0,0.05);
+            border-radius: 6px;
+            border: 1px solid rgba(255,215,0,0.2);
+        }
+
+        .stop-label {
+            font-size: 9px;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 3px;
+        }
+
+        .stop-value {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--yellow);
+            opacity: 0.9;
+        }
+
+        .sign-lights {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+        }
+
+        .sign-light {
+            width: 10px;
+            height: 10px;
+            background: var(--yellow);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--yellow);
+            animation: lightPulse 2s infinite;
+        }
+
+        .sign-light:nth-child(2) {
+            animation-delay: 0.5s;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .sign-light:nth-child(3) {
+            animation-delay: 1s;
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        @keyframes lightPulse {
+            0%, 100% {
+                opacity: 0.7;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .scroll-text {
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 700;
+        }
+
+        .scroll-line {
+            width: 2px;
+            height: 60px;
+            background: linear-gradient(to bottom, var(--yellow), transparent);
+            animation: scrollMove 2.5s ease-in-out infinite;
+        }
+
+        @keyframes scrollMove {
+            0%, 100% { transform: translateY(0); opacity: 0.3; }
+            50% { transform: translateY(25px); opacity: 1; }
+        }
+
+        /* Section Styles */
+        section {
+            padding: 140px 60px;
+            position: relative;
+        }
+
+        .section-header {
+            max-width: 900px;
+            margin: 0 auto 100px;
+            text-align: center;
+        }
+
+        .section-label {
+            display: inline-block;
+            padding: 10px 26px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--yellow);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+        }
+
+        .section-title {
+            font-size: clamp(50px, 7vw, 90px);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -3px;
+            margin-bottom: 28px;
+        }
+
+        .section-description {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.75);
+            line-height: 1.7;
+            margin-bottom: 40px;
+        }
+
+        /* Small Zigzag Ecosystem Cards */
+        .zigzag-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .zigzag-item {
+            display: flex;
+            align-items: center;
+            gap: 50px;
+            margin-bottom: 80px;
+            position: relative;
+        }
+
+        .zigzag-item:nth-child(odd) {
+            flex-direction: row;
+        }
+
+        .zigzag-item:nth-child(even) {
+            flex-direction: row-reverse;
+        }
+
+        .zigzag-visual {
+            flex: 0 0 350px;
+            height: 350px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 107, 0, 0.08));
+            border-radius: 25px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 120px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .zigzag-visual::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.15), transparent 60%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        .zigzag-visual:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(255, 215, 0, 0.2);
+            border-color: var(--yellow);
+        }
+
+        .zigzag-content {
+            flex: 1;
+            padding: 35px;
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.9), rgba(42, 42, 42, 0.7));
+            border: 1px solid rgba(255, 215, 0, 0.18);
+            border-radius: 25px;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .zigzag-content::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: -100%;
+            width: 300%;
+            height: 300%;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 60%);
+            opacity: 0;
+            transition: all 0.6s ease;
+        }
+
+        .zigzag-content:hover::after {
+            opacity: 1;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .zigzag-content:hover {
+            transform: translateY(-10px);
+            border-color: var(--yellow);
+            box-shadow: 0 30px 60px rgba(255, 215, 0, 0.2);
+        }
+
+        .zigzag-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--yellow), var(--accent));
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+        }
+
+        .zigzag-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 18px;
+            letter-spacing: -1px;
+            line-height: 1.2;
+            color: var(--yellow);
+        }
+
+        .zigzag-description {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.75);
+            line-height: 1.7;
+            margin-bottom: 22px;
+        }
+
+        .zigzag-features {
+            list-style: none;
+        }
+
+        .zigzag-features li {
+            padding: 10px 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .zigzag-features li::before {
+            content: '✓';
+            color: var(--yellow);
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark);
+            padding: 90px 60px 45px;
+            border-top: 1px solid rgba(255, 215, 0, 0.12);
+        }
+
+        .footer-grid {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 70px;
+            margin-bottom: 70px;
+        }
+
+        .footer-brand {
+            max-width: 420px;
+        }
+
+        .footer-logo {
+            font-family: 'Space Mono', monospace;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--yellow);
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        .footer-text {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.65);
+            line-height: 1.8;
+            margin-bottom: 32px;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 16px;
+        }
+
+        .social-link {
+            width: 52px;
+            height: 52px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--yellow);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 20px;
+        }
+
+        .social-link:hover {
+            background: var(--yellow);
+            color: #000;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(255, 215, 0, 0.3);
+        }
+
+        .footer-column h4 {
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 28px;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 14px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.65);
+            text-decoration: none;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--yellow);
+            transform: translateX(5px);
+            display: inline-block;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 45px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 15px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .zigzag-item {
+                gap: 40px;
+            }
+            
+            .zigzag-visual {
+                flex: 0 0 300px;
+                height: 300px;
+                font-size: 100px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .zigzag-item {
+                flex-direction: column !important;
+                gap: 30px;
+                margin-bottom: 60px;
+            }
+            
+            .zigzag-visual {
+                flex: 0 0 100%;
+                width: 100%;
+                height: 300px;
+                font-size: 100px;
+            }
+            
+            .zigzag-content {
+                width: 100%;
+                padding: 30px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 20px 30px;
+            }
+
+            nav {
+                display: none;
+            }
+
+            .highway-bus-numbers {
+                bottom: 20px;
+                padding: 10px;
+                gap: 8px;
+                overflow-x: auto;
+                justify-content: flex-start;
+            }
+
+            .bus-number-highway {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+                flex-shrink: 0;
+            }
+
+            .current-stop-board {
+                position: relative;
+                bottom: auto;
+                right: auto;
+                left: 50%;
+                transform: translateX(-50%);
+                margin: 30px auto;
+                animation: none;
+            }
+
+            section {
+                padding: 80px 30px;
+            }
+
+            .zigzag-visual {
+                height: 250px;
+                font-size: 80px;
+            }
+            
+            .zigzag-content {
+                padding: 25px;
+            }
+            
+            .zigzag-title {
+                font-size: 28px;
+            }
+            
+            .zigzag-description {
+                font-size: 15px;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 45px;
+            }
+
+            footer {
+                padding: 60px 30px 35px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .zigzag-visual {
+                height: 200px;
+                font-size: 60px;
+            }
+            
+            .zigzag-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+            }
+            
+            .zigzag-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading">
+        <div class="loader-container">
+            <div class="loader"></div>
+            <div class="loader"></div>
+        </div>
+        <div class="loading-text">LOADING YUS</div>
+    </div>
+
+    <!-- Header -->
+    <header id="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-bus"></i>
+            </div>
+            <span>YUS - YELLOH BUS</span>
+        </div>
+        <nav>
+            <a href="#home">Home</a>
+            <a href="#ecosystem">Ecosystem</a>
+        </nav>
+        <button class="header-btn">Get Started</button>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <canvas id="canvas3d"></canvas>
+        <div class="hero-overlay"></div>
+        
+        <!-- Highway Style Bus Numbers (Bottom) -->
+        <div class="highway-bus-numbers" id="highwayNumbers">
+            <!-- Bus numbers will be dynamically loaded -->
+        </div>
+
+        <!-- Small Current Stop Board with Stick - Right Corner -->
+        <div class="current-stop-board">
+            <div class="sign-lights">
+                <div class="sign-light"></div>
+                <div class="sign-light"></div>
+                <div class="sign-light"></div>
+            </div>
+            <div class="sign-board">
+                <div class="board-title">Current Stop</div>
+                <div class="stop-display" id="stopDisplay">Select Bus</div>
+                <div class="stop-details">
+                    <div class="stop-detail">
+                        <div class="stop-label">Stop #</div>
+                        <div class="stop-value" id="stopSequence">-</div>
+                    </div>
+                    <div class="stop-detail">
+                        <div class="stop-label">Arrival</div>
+                        <div class="stop-value" id="arrivalTime">-</div>
+                    </div>
+                    <div class="stop-detail">
+                        <div class="stop-label">Departure</div>
+                        <div class="stop-value" id="departureTime">-</div>
+                    </div>
+                    <div class="stop-detail">
+                        <div class="stop-label">Direction</div>
+                        <div class="stop-value" id="directionDisplay">-</div>
+                    </div>
+                </div>
+            </div>
+            <div class="sign-post"></div>
+        </div>
+
+        <div class="scroll-indicator">
+            <div class="scroll-text">SCROLL</div>
+            <div class="scroll-line"></div>
+        </div>
+    </section>
+
+    <!-- Ecosystem Section -->
+    <section id="ecosystem">
+        <div class="section-header">
+            <span class="section-label">Ecosystem</span>
+            <h2 class="section-title">Complete Ecosystem</h2>
+            <p class="section-description">Four interconnected platforms working together seamlessly for the ultimate transportation experience</p>
+        </div>
+
+        <div class="zigzag-container">
+            <!-- Card 1: Left Visual, Right Content -->
+            <div class="zigzag-item">
+                <div class="zigzag-visual">
+                    <i class="fas fa-route"></i>
+                </div>
+                <div class="zigzag-content">
+                    <div class="zigzag-icon">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <h3 class="zigzag-title">YUS Route Manager</h3>
+                    <p class="zigzag-description">Mobile application for administrators to define and optimize bus routes using advanced GPS mapping technology with real-time database sync.</p>
+                    <ul class="zigzag-features">
+                        <li>Real-time GPS route mapping</li>
+                        <li>Route optimization algorithms</li>
+                        <li>Multi-admin collaboration</li>
+                        <li>Database synchronization</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 2: Right Visual, Left Content -->
+            <div class="zigzag-item">
+                <div class="zigzag-visual">
+                    <i class="fas fa-bus"></i>
+                </div>
+                <div class="zigzag-content">
+                    <div class="zigzag-icon">
+                        <i class="fas fa-bus"></i>
+                    </div>
+                    <h3 class="zigzag-title">YUS Driver App</h3>
+                    <p class="zigzag-description">Driver-exclusive application with seamless location sharing and minimal battery consumption for continuous background operation.</p>
+                    <ul class="zigzag-features">
+                        <li>Auto location updates (5s)</li>
+                        <li>Low-power background mode</li>
+                        <li>Emergency alert system</li>
+                        <li>Route navigation guidance</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 3: Left Visual, Right Content -->
+            <div class="zigzag-item">
+                <div class="zigzag-visual">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <div class="zigzag-content">
+                    <div class="zigzag-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3 class="zigzag-title">Yelloh Bus App</h3>
+                    <p class="zigzag-description">Student and staff application for real-time bus tracking with dynamic ETA calculations and personalized notifications.</p>
+                    <ul class="zigzag-features">
+                        <li>Live bus tracking</li>
+                        <li>Dynamic ETA predictions</li>
+                        <li>Push notifications</li>
+                        <li>Favorite routes & stops</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 4: Right Visual, Left Content -->
+            <div class="zigzag-item">
+                <div class="zigzag-visual">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <div class="zigzag-content">
+                    <div class="zigzag-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3 class="zigzag-title">YUS Admin</h3>
+                    <p class="zigzag-description">Web-based control center for complete system management, analytics, and real-time monitoring of the entire fleet.</p>
+                    <ul class="zigzag-features">
+                        <li>Real-time dashboard analytics</li>
+                        <li>Driver & bus management</li>
+                        <li>Schedule coordination</li>
+                        <li>Performance reporting</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="footer-logo">YUS - YELLOH BUS</div>
+                <p class="footer-text">Revolutionizing campus transportation with cutting-edge real-time tracking technology and seamless integration for the entire campus community.</p>
+                <div class="social-links">
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+            <div class="footer-column">
+                <h4>Product</h4>
+                <ul class="footer-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#ecosystem">Ecosystem</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Resources</h4>
+                <ul class="footer-links">
+                    <li><a href="#">Documentation</a></li>
+                    <li><a href="#">Support</a></li>
+                    <li><a href="#">Community</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Contact</h4>
+                <ul class="footer-links">
+                    <li><a href="mailto:info@yus.com">info@yus.com</a></li>
+                    <li><a href="tel:+1234567890">+1 (234) 567-890</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2024 YUS - Yelloh Bus. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Global variable to store route data dynamically
+        let routeData = [];
+
+        // Function to fetch data from API
+        async function fetchRouteData() {
+            try {
+                const response = await fetch('https://yus.kwscloud.in/yus/get-current-bus-routes');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching route data:', error);
+                return [];
+            }
+        }
+
+        // Function to transform API data to match expected format
+        function transformApiData(apiData) {
+            return apiData.map(route => ({
+                route_id: route.route_id,
+                bus_id: route.bus_id,
+                driver_id: route.driver_id || null,
+                direction: route.direction,
+                route_name: route.route_name,
+                src: route.src || '',
+                dest: route.dest || '',
+                stops: route.stops.map(stop => ({
+                    stop_sequence: stop.stop_sequence,
+                    location_name: stop.location_name,
+                    lat: stop.lat || null,
+                    lon: stop.lon || null,
+                    arrival_time: stop.arrival_time,
+                    departure_time: stop.departure_time,
+                    is_stop: stop.is_stop
+                })),
+                active: route.active,
+                is_Stop: route.is_Stop || false
+            }));
+        }
+
+        window.addEventListener('load', async () => {
+            // Show loading screen
+            const loadingScreen = document.getElementById('loading');
+            
+            try {
+                // Fetch data from API
+                const apiData = await fetchRouteData();
+                routeData = transformApiData(apiData);
+                
+                // Debug: Log fetched data
+                console.log('Fetched route data:', routeData);
+                
+                // Hide loading screen after data is loaded
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    initThreeJS();
+                    initBusSelector();
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Failed to load route data:', error);
+                // Fallback to empty data and continue
+                routeData = [];
+                
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    initThreeJS();
+                    initBusSelector();
+                }, 2000);
+            }
+        });
+
+        window.addEventListener('scroll', () => {
+            const header = document.getElementById('header');
+            if (window.scrollY > 100) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // Global variables
+        let currentBusId = null;
+        let currentStopIndex = 0;
+        let stopInterval = null;
+        let currentRoute = null;
+
+        function initBusSelector() {
+            const highway = document.getElementById('highwayNumbers');
+            highway.innerHTML = '';
+            
+            // Get unique active bus IDs
+            const uniqueBuses = [...new Set(routeData
+                .filter(r => r.active)
+                .map(r => r.bus_id))];
+            
+            console.log('Active bus IDs:', uniqueBuses);
+            
+            if (uniqueBuses.length === 0) {
+                const noBusMsg = document.createElement('div');
+                noBusMsg.className = 'bus-number-highway';
+                noBusMsg.textContent = 'No Active Buses';
+                noBusMsg.style.opacity = '0.7';
+                highway.appendChild(noBusMsg);
+                return;
+            }
+            
+            uniqueBuses.forEach(busId => {
+                const numberDiv = document.createElement('div');
+                numberDiv.className = 'bus-number-highway';
+                numberDiv.textContent = busId;
+                numberDiv.onclick = () => selectBus(busId);
+                highway.appendChild(numberDiv);
+            });
+            
+            // Select first bus by default
+            if (uniqueBuses.length > 0) {
+                selectBus(uniqueBuses[0]);
+            }
+        }
+
+        function selectBus(busId) {
+            currentBusId = busId;
+            // Find active route for this bus
+            currentRoute = routeData.find(r => r.bus_id === busId && r.active);
+            
+            // Update UI buttons
+            document.querySelectorAll('.bus-number-highway').forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.textContent) === busId) {
+                    btn.classList.add('active');
+                    gsap.to(btn, {
+                        scale: 1.2,
+                        duration: 0.3,
+                        yoyo: true,
+                        repeat: 1
+                    });
+                }
+            });
+            
+            if (currentRoute) {
+                currentStopIndex = 0;
+                startStopAnimation();
+            } else {
+                // No active route for this bus
+                document.getElementById('stopDisplay').textContent = 'No Active Route';
+                document.getElementById('stopSequence').textContent = '-';
+                document.getElementById('arrivalTime').textContent = '-';
+                document.getElementById('departureTime').textContent = '-';
+                document.getElementById('directionDisplay').textContent = '-';
+                
+                if (stopInterval) {
+                    clearInterval(stopInterval);
+                    stopInterval = null;
+                }
+            }
+        }
+
+        function startStopAnimation() {
+            if (stopInterval) {
+                clearInterval(stopInterval);
+            }
+            
+            updateStopDisplay();
+            
+            // Animate through stops
+            stopInterval = setInterval(() => {
+                currentStopIndex = (currentStopIndex + 1) % currentRoute.stops.length;
+                updateStopDisplay();
+            }, 2000);
+        }
+
+        function updateStopDisplay() {
+            if (!currentRoute || !currentRoute.stops[currentStopIndex]) return;
+            
+            const stop = currentRoute.stops[currentStopIndex];
+            const stopElement = document.getElementById('stopDisplay');
+            
+            gsap.to(stopElement, {
+                opacity: 0,
+                y: -10,
+                duration: 0.3,
+                onComplete: () => {
+                    stopElement.textContent = stop.location_name;
+                    document.getElementById('stopSequence').textContent = stop.stop_sequence;
+                    document.getElementById('arrivalTime').textContent = stop.arrival_time;
+                    document.getElementById('departureTime').textContent = stop.departure_time;
+                    document.getElementById('directionDisplay').textContent = currentRoute.direction;
+                    
+                    const stopBoard = document.querySelector('.sign-board');
+                    gsap.to(stopBoard, {
+                        scale: 1.02,
+                        duration: 0.2,
+                        yoyo: true,
+                        repeat: 1
+                    });
+                    
+                    gsap.to(stopElement, {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.3
+                    });
+                }
+            });
+        }
+
+        let scene, camera, renderer, bus, road;
+        let busX = -40;
+        const busSpeed = 0.08;
+        let roadLines = [];
+        let backgroundElements = [];
+
+        function initThreeJS() {
+            const canvas = document.getElementById('canvas3d');
+            
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x0a0a0a, 30, 150);
+            
+            camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 15, 35);
+            camera.lookAt(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ 
+                canvas, 
+                antialias: true, 
+                alpha: false,
+                powerPreference: "high-performance"
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setClearColor(0x0a0a0a, 1);
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(20, 40, 20);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 4096;
+            directionalLight.shadow.mapSize.height = 4096;
+            scene.add(directionalLight);
+            
+            const pointLight = new THREE.PointLight(0xFFD700, 2, 100);
+            pointLight.position.set(-15, 25, 10);
+            scene.add(pointLight);
+            
+            createParallaxBackground();
+            createCurvedRoad();
+            createDetailedBus();
+            
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function createParallaxBackground() {
+            for (let i = 0; i < 12; i++) {
+                const treeGroup = new THREE.Group();
+                
+                const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.4, 3, 8);
+                const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x4a3520, roughness: 0.9 });
+                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+                trunk.position.y = 1.5;
+                trunk.castShadow = true;
+                treeGroup.add(trunk);
+                
+                const leavesGeometry = new THREE.SphereGeometry(2, 8, 8);
+                const leavesMaterial = new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.8 });
+                const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+                leaves.position.y = 4;
+                leaves.castShadow = true;
+                treeGroup.add(leaves);
+                
+                const side = Math.random() > 0.5 ? 1 : -1;
+                treeGroup.position.set(
+                    (Math.random() * 60) - 30,
+                    -3,
+                    side * (20 + Math.random() * 20)
+                );
+                treeGroup.userData.speed = 0.02;
+                treeGroup.userData.resetX = side > 0 ? -40 : 40;
+                treeGroup.userData.startX = side > 0 ? 40 : -40;
+                
+                scene.add(treeGroup);
+                backgroundElements.push(treeGroup);
+            }
+            
+            for (let i = 0; i < 20; i++) {
+                const buildingGroup = new THREE.Group();
+                
+                const height = 20 + Math.random() * 30;
+                const width = 8 + Math.random() * 12;
+                const depth = 8 + Math.random() * 12;
+                
+                const buildingGeometry = new THREE.BoxGeometry(width, height, depth);
+                const buildingMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x333333,
+                    roughness: 0.7,
+                    metalness: 0.3
+                });
+                const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+                building.position.y = height / 2 - 5;
+                building.castShadow = true;
+                buildingGroup.add(building);
+                
+                const windowGeometry = new THREE.BoxGeometry(0.5, 0.8, 0.1);
+                const windowMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xFFD700,
+                    transparent: true,
+                    opacity: 0.7
+                });
+                
+                for (let w = 0; w < Math.floor(width / 1.5); w++) {
+                    for (let h = 0; h < Math.floor(height / 2.5); h++) {
+                        if (Math.random() > 0.4) {
+                            const windowMesh = new THREE.Mesh(windowGeometry, windowMaterial);
+                            windowMesh.position.set(
+                                -width/2 + (w + 0.5) * (width / Math.floor(width / 1.5)),
+                                -height/2 + (h + 0.5) * (height / Math.floor(height / 2.5)),
+                                depth/2 + 0.05
+                            );
+                            building.add(windowMesh);
+                        }
+                    }
+                }
+                
+                const side = Math.random() > 0.5 ? 1 : -1;
+                buildingGroup.position.set(
+                    (Math.random() * 150) - 75,
+                    0,
+                    side * (40 + Math.random() * 20)
+                );
+                buildingGroup.userData.speed = 0.04;
+                buildingGroup.userData.resetX = side > 0 ? -40 : 40;
+                buildingGroup.userData.startX = side > 0 ? 40 : -40;
+                
+                scene.add(buildingGroup);
+                backgroundElements.push(buildingGroup);
+            }
+            
+            for (let i = 0; i < 20; i++) {
+                const lampGroup = new THREE.Group();
+                
+                const poleGeometry = new THREE.CylinderGeometry(0.2, 0.25, 12, 8);
+                const poleMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+                pole.position.y = 6;
+                lampGroup.add(pole);
+                
+                const lightGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+                const lightMaterial = new THREE.MeshStandardMaterial({
+                    color: 0xFFD700,
+                    emissive: 0xFFD700,
+                    emissiveIntensity: 3
+                });
+                const light = new THREE.Mesh(lightGeometry, lightMaterial);
+                light.position.y = 12;
+                lampGroup.add(light);
+                
+                const side = Math.random() > 0.5 ? 1 : -1;
+                lampGroup.position.set(
+                    (Math.random() * 100) - 50,
+                    -2,
+                    side * (14 + Math.random() * 2)
+                );
+                lampGroup.userData.speed = 0.08;
+                lampGroup.userData.resetX = side > 0 ? -50 : 50;
+                lampGroup.userData.startX = side > 0 ? 50 : -50;
+                
+                scene.add(lampGroup);
+                backgroundElements.push(lampGroup);
+            }
+        }
+
+        function createCurvedRoad() {
+            const roadGeometry = new THREE.PlaneGeometry(150, 16);
+            const roadMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1a1a1a,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            road = new THREE.Mesh(roadGeometry, roadMaterial);
+            road.rotation.x = -Math.PI / 2;
+            road.position.y = -3.5;
+            road.receiveShadow = true;
+            scene.add(road);
+            
+            const lineGeometry = new THREE.PlaneGeometry(4, 0.4);
+            const lineMaterial = new THREE.MeshBasicMaterial({
+                color: 0xFFD700,
+                transparent: true,
+                opacity: 0.9
+            });
+            
+            for (let i = -70; i < 70; i += 8) {
+                const line = new THREE.Mesh(lineGeometry, lineMaterial);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(i, -3.48, 0);
+                scene.add(line);
+                roadLines.push(line);
+            }
+            
+            const edgeGeometry = new THREE.PlaneGeometry(150, 0.5);
+            const edgeMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFFD700,
+                roughness: 0.3,
+                metalness: 0.7,
+                emissive: 0xFFD700,
+                emissiveIntensity: 0.2
+            });
+            
+            const edge1 = new THREE.Mesh(edgeGeometry, edgeMaterial);
+            edge1.rotation.x = -Math.PI / 2;
+            edge1.position.set(0, -3.47, 8);
+            scene.add(edge1);
+            
+            const edge2 = new THREE.Mesh(edgeGeometry, edgeMaterial);
+            edge2.rotation.x = -Math.PI / 2;
+            edge2.position.set(0, -3.47, -8);
+            scene.add(edge2);
+            
+            const groundGeometry = new THREE.PlaneGeometry(300, 300);
+            const groundMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0a0a0a,
+                roughness: 1,
+                metalness: 0
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -3.6;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
+
+        function createDetailedBus() {
+            bus = new THREE.Group();
+            
+            const bodyGeometry = new THREE.BoxGeometry(12, 4, 3.2);
+            const bodyMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFFD700,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            body.receiveShadow = true;
+            bus.add(body);
+            
+            const stripeGeometry = new THREE.BoxGeometry(12.1, 2, 3.22);
+            const stripeMaterial = new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                roughness: 0.3,
+                metalness: 0.9
+            });
+            const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
+            stripe.position.y = 0.8;
+            bus.add(stripe);
+            
+            const frontGeometry = new THREE.BoxGeometry(1.5, 3.8, 3.1);
+            const front = new THREE.Mesh(frontGeometry, bodyMaterial);
+            front.position.x = 6.25;
+            front.castShadow = true;
+            bus.add(front);
+            
+            const windshieldGeometry = new THREE.PlaneGeometry(2.8, 2.4);
+            const windshieldMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0x87CEEB,
+                transparent: true,
+                opacity: 0.4,
+                roughness: 0.05,
+                metalness: 0.95,
+                transmission: 0.8
+            });
+            const windshield = new THREE.Mesh(windshieldGeometry, windshieldMaterial);
+            windshield.position.set(6.25, 1.2, 0);
+            windshield.rotation.y = Math.PI / 2;
+            bus.add(windshield);
+            
+            const windowGeometry = new THREE.PlaneGeometry(1.6, 1.2);
+            const windowMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0x1a1a1a,
+                transparent: true,
+                opacity: 0.6,
+                roughness: 0.05,
+                metalness: 0.9
+            });
+            
+            for (let i = -4; i <= 4; i += 2) {
+                const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
+                window1.position.set(i, 1.2, 1.61);
+                bus.add(window1);
+                
+                const window2 = new THREE.Mesh(windowGeometry, windowMaterial);
+                window2.position.set(i, 1.2, -1.61);
+                bus.add(window2);
+            }
+            
+            const tireGeometry = new THREE.CylinderGeometry(0.7, 0.7, 0.6, 32);
+            const tireMaterial = new THREE.MeshStandardMaterial({
+                color: 0x0a0a0a,
+                roughness: 0.95
+            });
+            
+            const rimGeometry = new THREE.CylinderGeometry(0.45, 0.45, 0.62, 20);
+            const rimMaterial = new THREE.MeshStandardMaterial({
+                color: 0xC0C0C0,
+                roughness: 0.1,
+                metalness: 0.95
+            });
+            
+            bus.wheels = [];
+            const wheelPositions = [
+                [4.5, -2, 1.6],
+                [4.5, -2, -1.6],
+                [-4.5, -2, 1.6],
+                [-4.5, -2, -1.6]
+            ];
+            
+            wheelPositions.forEach(pos => {
+                const tire = new THREE.Mesh(tireGeometry, tireMaterial);
+                tire.rotation.z = Math.PI / 2;
+                tire.position.set(pos[0], pos[1], pos[2]);
+                tire.castShadow = true;
+                
+                const rim = new THREE.Mesh(rimGeometry, rimMaterial);
+                rim.rotation.z = Math.PI / 2;
+                rim.position.set(pos[0], pos[1], pos[2]);
+                
+                bus.wheels.push({ tire, rim });
+                bus.add(tire);
+                bus.add(rim);
+            });
+            
+            const headlightGeometry = new THREE.SphereGeometry(0.25, 24, 24);
+            const headlightMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFFFFFF,
+                emissive: 0xFFFFFF,
+                emissiveIntensity: 5
+            });
+            
+            const headlight1 = new THREE.Mesh(headlightGeometry, headlightMaterial);
+            headlight1.position.set(6.5, -0.2, 1);
+            bus.add(headlight1);
+            
+            const headlight2 = new THREE.Mesh(headlightGeometry, headlightMaterial);
+            headlight2.position.set(6.5, -0.2, -1);
+            bus.add(headlight2);
+            
+            const taillightMaterial = new THREE.MeshStandardMaterial({
+                color: 0xFF0000,
+                emissive: 0xFF0000,
+                emissiveIntensity: 3
+            });
+            
+            const taillight1 = new THREE.Mesh(headlightGeometry, taillightMaterial);
+            taillight1.position.set(-6.5, -0.2, 1);
+            bus.add(taillight1);
+            
+            const taillight2 = new THREE.Mesh(headlightGeometry, taillightMaterial);
+            taillight2.position.set(-6.5, -0.2, -1);
+            bus.add(taillight2);
+            
+            const roofGeometry = new THREE.BoxGeometry(11.6, 0.3, 3);
+            const roofMaterial = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 0.4,
+                metalness: 0.6
+            });
+            const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+            roof.position.y = 2.15;
+            roof.castShadow = true;
+            bus.add(roof);
+            
+            bus.position.set(busX, -0.5, 4);
+            bus.rotation.y = Math.PI / 2;
+            scene.add(bus);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (bus) {
+                busX += busSpeed;
+                if (busX > 50) busX = -50;
+                
+                bus.position.x = busX;
+                bus.position.y = -0.5 + Math.sin(busX * 0.4) * 0.08;
+                
+                bus.wheels.forEach(wheel => {
+                    wheel.tire.rotation.x += busSpeed * 2.5;
+                    wheel.rim.rotation.x += busSpeed * 2.5;
+                });
+                
+                roadLines.forEach(line => {
+                    line.position.x -= busSpeed;
+                    if (line.position.x < -70) line.position.x = 70;
+                });
+            }
+            
+            backgroundElements.forEach(element => {
+                element.position.x -= element.userData.speed;
+                if (element.position.x < element.userData.resetX) {
+                    element.position.x = element.userData.startX;
+                }
+            });
+            
+            camera.position.x = busX * 0.3;
+            camera.lookAt(busX * 0.3, 0, 0);
+            
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        gsap.from('.highway-bus-numbers', {
+            opacity: 0,
+            y: 50,
+            duration: 1,
+            delay: 3.8,
+            ease: 'back.out(1.7)'
+        });
+
+        gsap.from('.current-stop-board', {
+            opacity: 0,
+            x: 100,
+            rotationY: 90,
+            duration: 1.5,
+            delay: 4,
+            ease: 'back.out(1.7)'
+        });
+
+        // Add animations for zigzag items
+        gsap.utils.toArray('.zigzag-item').forEach((item, index) => {
+            const visual = item.querySelector('.zigzag-visual');
+            const content = item.querySelector('.zigzag-content');
+            
+            gsap.from(visual, {
+                scrollTrigger: {
+                    trigger: item,
+                    start: 'top 80%',
+                    end: 'top 25%',
+                    toggleActions: 'play none none reverse'
+                },
+                opacity: 0,
+                x: index % 2 === 0 ? -80 : 80,
+                scale: 0.8,
+                duration: 1,
+                ease: 'power3.out'
+            });
+            
+            gsap.from(content, {
+                scrollTrigger: {
+                    trigger: item,
+                    start: 'top 80%',
+                    end: 'top 25%',
+                    toggleActions: 'play none none reverse'
+                },
+                opacity: 0,
+                y: 40,
+                scale: 0.95,
+                duration: 0.8,
+                delay: 0.1,
+                ease: 'power3.out'
+            });
+        });
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
