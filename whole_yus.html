@@ -677,6 +677,7 @@
             transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            cursor: pointer;
         }
 
         .zigzag-content::after {
@@ -753,6 +754,18 @@
             font-weight: 700;
             font-size: 16px;
             flex-shrink: 0;
+        }
+
+        /* Clickable Card Link */
+        .card-link {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            cursor: pointer;
+            text-decoration: none;
         }
 
         /* Footer */
@@ -1058,6 +1071,8 @@
                     <i class="fas fa-route"></i>
                 </div>
                 <div class="zigzag-content">
+                    <!-- Add clickable link for YUS Route Manager -->
+                    <a href="yus_route3.html" class="card-link"></a>
                     <div class="zigzag-icon">
                         <i class="fas fa-route"></i>
                     </div>
@@ -1078,6 +1093,8 @@
                     <i class="fas fa-bus"></i>
                 </div>
                 <div class="zigzag-content">
+                    <!-- Add clickable link for YUS Driver App -->
+                    <a href="yus_driver.html" class="card-link"></a>
                     <div class="zigzag-icon">
                         <i class="fas fa-bus"></i>
                     </div>
@@ -1098,6 +1115,8 @@
                     <i class="fas fa-mobile-alt"></i>
                 </div>
                 <div class="zigzag-content">
+                    <!-- Add clickable link for Yelloh Bus App to redirect to home page -->
+                    <a href="#home" class="card-link"></a>
                     <div class="zigzag-icon">
                         <i class="fas fa-mobile-alt"></i>
                     </div>
@@ -1118,6 +1137,8 @@
                     <i class="fas fa-cogs"></i>
                 </div>
                 <div class="zigzag-content">
+                    <!-- Add clickable link for YUS Admin -->
+                    <a href="yus_admin2.html" class="card-link"></a>
                     <div class="zigzag-icon">
                         <i class="fas fa-cogs"></i>
                     </div>
