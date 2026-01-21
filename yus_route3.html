@@ -610,6 +610,14 @@
         let autoRotateAnimation = null;
         let hasCompletedInitialRotation = false;
         
+        // Constants for positioning - ROAD IS NOW AT Y=2.0 (HIGHER POSITION)
+        const ROAD_Y_POSITION = 2.0; // Road is at y=2.0 (higher above ground)
+        const GROUND_Y_POSITION = 0; // Ground is at y=0
+        const MINIMUM_HEIGHT_ABOVE_ROAD = 0.1; // Minimum height above road for any object
+        const BUS_HEIGHT = 2.5; // Bus height
+        const MARKER_BASE_HEIGHT = 0.3; // Marker base height
+        const MARKER_TOTAL_HEIGHT = 1.2; // Total marker height
+        
         // Initialize Three.js scene
         function init() {
             // Create scene
@@ -648,6 +656,10 @@
             controls.enableZoom = true;
             controls.zoomSpeed = 0.5; // Reduced zoom speed for smoother control
             
+            // Set minimum camera height to prevent going under road
+            controls.minPolarAngle = 0.1; // Prevent camera from going below horizon
+            controls.maxPolarAngle = Math.PI - 0.1; // Prevent camera from going straight up
+            
             // Add lights
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
@@ -672,12 +684,13 @@
             });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
             ground.rotation.x = Math.PI / 2;
+            ground.position.y = GROUND_Y_POSITION; // Ground at y=0
             ground.receiveShadow = true;
             scene.add(ground);
             
-            // Add grid helper
+            // Add grid helper - Position it at ground level
             const gridHelper = new THREE.GridHelper(120, 30, 0x333333, 0x222222);
-            gridHelper.position.y = 0.01;
+            gridHelper.position.y = GROUND_Y_POSITION + 0.01; // Slightly above ground
             scene.add(gridHelper);
             
             // Create campus buildings
@@ -689,7 +702,7 @@
             // Create route visualization
             createRouteVisualization();
             
-            // Create road and pathways
+            // Create road and pathways - Road is above ground
             createRoadAndPathways();
             
             // Add decorative elements
@@ -698,7 +711,7 @@
             // Handle window resize
             window.addEventListener('resize', onWindowResize);
             
-            // Start initial 360 auto-rotation (one time only) - FASTER ROTATION
+            // Start initial 360 auto-rotation (one time only)
             startInitialAutoRotate();
             
             // Start animation loop
@@ -708,7 +721,7 @@
             initUI();
         }
         
-        // Start initial 360 degree auto-rotation (one time only) - FASTER ROTATION
+        // Start initial 360 degree auto-rotation (one time only)
         function startInitialAutoRotate() {
             if (autoRotateAnimation) {
                 autoRotateAnimation.kill();
@@ -718,9 +731,9 @@
             const startPos = camera.position.clone();
             const startTarget = new THREE.Vector3(0, 10, 0);
             
-            // Create a smooth 360 degree rotation - FASTER (5 seconds instead of 12)
+            // Create a smooth 360 degree rotation
             let rotationProgress = 0;
-            const rotationDuration = 5; // CHANGED: 5 seconds for full rotation (was 12)
+            const rotationDuration = 5; // 5 seconds for full rotation
             const radius = 40;
             
             autoRotateAnimation = gsap.to({}, {
@@ -756,7 +769,7 @@
                 x: 40,
                 y: 20,
                 z: 0,
-                duration: 1, // CHANGED: Slightly faster
+                duration: 1,
                 ease: "power2.inOut",
                 onUpdate: function() {
                     camera.lookAt(0, 10, 0);
@@ -765,7 +778,7 @@
             });
         }
         
-        // Create road and pathways
+        // Create road and pathways - Road is positioned above ground
         function createRoadAndPathways() {
             // Main road - straight path through campus
             const roadGeometry = new THREE.PlaneGeometry(80, 10);
@@ -776,12 +789,12 @@
                 metalness: 0.1
             });
             const road = new THREE.Mesh(roadGeometry, roadMaterial);
-            road.position.y = 0.02;
+            road.position.y = ROAD_Y_POSITION; // Road is at y=2.0 (above ground)
             road.rotation.x = Math.PI / 2;
             road.receiveShadow = true;
             scene.add(road);
             
-            // Road markings
+            // Road markings - Position above road
             const markingsGeometry = new THREE.PlaneGeometry(2, 0.3);
             const markingsMaterial = new THREE.MeshBasicMaterial({ 
                 color: "white",
@@ -790,13 +803,13 @@
             
             for (let i = -40; i <= 40; i += 6) {
                 const marking = new THREE.Mesh(markingsGeometry, markingsMaterial);
-                marking.position.set(i, 0.03, 0);
+                marking.position.set(i, ROAD_Y_POSITION + 0.01, 0); // Slightly above road
                 marking.rotation.x = Math.PI / 2;
                 scene.add(marking);
             }
         }
         
-        // Create campus buildings (REMOVED BUILDING NAMES)
+        // Create campus buildings
         function createCampusBuildings() {
             const buildingColors = [0x2C3E50, 0x34495E, 0x1A5276, 0x21618C, 0x1B4F72];
             
@@ -826,12 +839,11 @@
                     roughness: 0.6
                 });
                 const building = new THREE.Mesh(geometry, material);
-                building.position.set(pos.x, pos.height / 2, pos.z);
+                // Building base starts at ground level
+                building.position.set(pos.x, GROUND_Y_POSITION + pos.height / 2, pos.z);
                 building.castShadow = true;
                 building.receiveShadow = true;
                 scene.add(building);
-                
-                // REMOVED: Building name labels
                 
                 // Add windows to building
                 const windowRows = Math.floor(pos.height / 4);
@@ -847,7 +859,7 @@
                         });
                         
                         const xPos = pos.x - pos.width/2 + (col + 0.5) * (pos.width / windowCols);
-                        const yPos = row * 4 + 3;
+                        const yPos = GROUND_Y_POSITION + row * 4 + 3;
                         const zOffset = pos.z > 0 ? -pos.depth/2 - 0.05 : pos.depth/2 + 0.05;
                         
                         const window = new THREE.Mesh(windowGeometry, windowMaterial);
@@ -867,7 +879,7 @@
                 const x = -45 + (Math.random() * 90);
                 const z = side * (20 + Math.random() * 10);
                 
-                tree.position.set(x, 2, z);
+                tree.position.set(x, GROUND_Y_POSITION + 2, z); // Tree base at ground level
                 tree.castShadow = true;
                 scene.add(tree);
             }
@@ -892,7 +904,7 @@
                 roughness: 0.3
             });
             const pole = new THREE.Mesh(poleGeometry, poleMaterial);
-            pole.position.set(x, 4, z);
+            pole.position.set(x, GROUND_Y_POSITION + 4, z); // Pole base at ground level
             pole.castShadow = true;
             scene.add(pole);
             
@@ -904,14 +916,14 @@
                 emissiveIntensity: 0.5
             });
             const lamp = new THREE.Mesh(lampGeometry, lampMaterial);
-            lamp.position.set(x, 8, z);
+            lamp.position.set(x, GROUND_Y_POSITION + 8, z); // Lamp at top of pole
             scene.add(lamp);
         }
         
-        // Create admin marker (bus)
+        // Create admin marker (bus) - Bus positioned above road
         function createAdminMarker() {
             // Bus body
-            const busGeometry = new THREE.BoxGeometry(4, 2, 8);
+            const busGeometry = new THREE.BoxGeometry(4, BUS_HEIGHT, 8);
             const busMaterial = new THREE.MeshStandardMaterial({ 
                 color: 0xFFD700,
                 metalness: 0.6,
@@ -923,7 +935,7 @@
             bus.castShadow = true;
             
             // Bus windows
-            const windowGeometry = new THREE.BoxGeometry(3.8, 0.8, 7.8);
+            const windowGeometry = new THREE.BoxGeometry(3.8, 1.2, 7.8);
             const windowMaterial = new THREE.MeshPhysicalMaterial({
                 color: 0x88CCFF,
                 transparent: true,
@@ -932,7 +944,7 @@
                 metalness: 0.9
             });
             const windows = new THREE.Mesh(windowGeometry, windowMaterial);
-            windows.position.y = 0.8;
+            windows.position.y = 1.2;
             
             // Wheels
             const wheelGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 16);
@@ -954,14 +966,14 @@
             wheelPositions.forEach(pos => {
                 const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
                 wheel.rotation.z = Math.PI / 2;
-                wheel.position.set(pos.x, -0.8, pos.z);
+                wheel.position.set(pos.x, -BUS_HEIGHT/2 + 0.2, pos.z); // Wheels at bottom of bus
                 wheel.castShadow = true;
                 busGroup.add(wheel);
             });
             
             busGroup.add(bus);
             busGroup.add(windows);
-            busGroup.position.y = 1;
+            busGroup.position.y = ROAD_Y_POSITION + BUS_HEIGHT/2; // Bus bottom at road level
             
             // Add YUS logo
             const logoGeometry = new THREE.PlaneGeometry(2, 0.8);
@@ -982,13 +994,13 @@
                 opacity: 0.9
             });
             const gpsSignal = new THREE.Mesh(gpsSignalGeometry, gpsSignalMaterial);
-            gpsSignal.position.set(0, 2.5, 0);
+            gpsSignal.position.set(0, BUS_HEIGHT/2 + 0.5, 0); // Above bus
             busGroup.add(gpsSignal);
             
             adminMarker = busGroup;
             
             // Start bus at beginning of road
-            adminMarker.position.set(-45, 1, 0);
+            adminMarker.position.set(-45, ROAD_Y_POSITION + BUS_HEIGHT/2, 0);
             scene.add(adminMarker);
             
             // Store wheel references
@@ -1020,25 +1032,25 @@
         function createRouteVisualization() {
             // Create a straight path for the route along the road
             const curve = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(-45, 1, 0),
-                new THREE.Vector3(-40, 1, 0),
-                new THREE.Vector3(-35, 1, 0),
-                new THREE.Vector3(-30, 1, 0),
-                new THREE.Vector3(-25, 1, 0),
-                new THREE.Vector3(-20, 1, 0),
-                new THREE.Vector3(-15, 1, 0),
-                new THREE.Vector3(-10, 1, 0),
-                new THREE.Vector3(-5, 1, 0),
-                new THREE.Vector3(0, 1, 0),
-                new THREE.Vector3(5, 1, 0),
-                new THREE.Vector3(10, 1, 0),
-                new THREE.Vector3(15, 1, 0),
-                new THREE.Vector3(20, 1, 0),
-                new THREE.Vector3(25, 1, 0),
-                new THREE.Vector3(30, 1, 0),
-                new THREE.Vector3(35, 1, 0),
-                new THREE.Vector3(40, 1, 0),
-                new THREE.Vector3(45, 1, 0)
+                new THREE.Vector3(-45, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(-40, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(-35, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(-30, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(-25, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(-20, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(-15, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(-10, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(-5, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(0, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(5, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(10, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(15, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(20, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(25, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(30, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(35, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(40, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0),
+                new THREE.Vector3(45, ROAD_Y_POSITION + MINIMUM_HEIGHT_ABOVE_ROAD, 0)
             ]);
             
             // Store curve for animation
@@ -1100,10 +1112,13 @@
             const point = curve.getPoint(t);
             
             if (adminMarker) {
-                // Move admin marker
+                // Move admin marker - Ensure bus stays above road
+                const targetY = ROAD_Y_POSITION + BUS_HEIGHT/2;
+                
                 gsap.to(adminMarker.position, {
                     x: point.x,
                     z: point.z,
+                    y: targetY, // Force y position to stay above road
                     duration: 0.3,
                     ease: "power1.out"
                 });
@@ -1147,7 +1162,7 @@
                     controls.target.copy(adminMarker.position);
                     camera.position.x = adminMarker.position.x;
                     camera.position.z = adminMarker.position.z + 15;
-                    camera.position.y = 10;
+                    camera.position.y = ROAD_Y_POSITION + 10; // Keep camera above road
                     camera.lookAt(adminMarker.position);
                 }
                 
@@ -1175,13 +1190,13 @@
             }
         }
         
-        // Mark a stop at current location - CHANGED TO YELLOW LOCATION SYMBOL
+        // Mark a stop at current location - Positioned above road
         function markStop(position, stopNumber) {
             // Create small yellow location symbol (pin shape)
             const locationPinGroup = new THREE.Group();
             
             // Pin base (small cylinder - YELLOW color)
-            const pinBaseGeometry = new THREE.CylinderGeometry(0.1, 0.15, 0.8, 8);
+            const pinBaseGeometry = new THREE.CylinderGeometry(0.1, 0.15, MARKER_BASE_HEIGHT, 8);
             const pinBaseMaterial = new THREE.MeshStandardMaterial({ 
                 color: 0xFFD700, // YELLOW
                 emissive: 0x996600,
@@ -1190,7 +1205,7 @@
                 roughness: 0.4
             });
             const pinBase = new THREE.Mesh(pinBaseGeometry, pinBaseMaterial);
-            pinBase.position.y = 0.4;
+            pinBase.position.y = MARKER_BASE_HEIGHT/2; // Center the cylinder
             pinBase.castShadow = true;
             locationPinGroup.add(pinBase);
             
@@ -1204,12 +1219,12 @@
                 roughness: 0.3
             });
             const pinHead = new THREE.Mesh(pinHeadGeometry, pinHeadMaterial);
-            pinHead.position.y = 0.9;
+            pinHead.position.y = MARKER_BASE_HEIGHT + 0.25; // On top of base
             pinHead.castShadow = true;
             locationPinGroup.add(pinHead);
             
-            // Position the entire location symbol
-            locationPinGroup.position.set(position.x, 0, position.z);
+            // Position the entire location symbol - Base at road level
+            locationPinGroup.position.set(position.x, ROAD_Y_POSITION, position.z);
             scene.add(locationPinGroup);
             
             // Create stop label (small number)
@@ -1234,7 +1249,7 @@
                 color: 0xFFFFFF
             });
             const sprite = new THREE.Sprite(spriteMaterial);
-            sprite.position.set(position.x, 1.5, position.z);
+            sprite.position.set(position.x, ROAD_Y_POSITION + MARKER_TOTAL_HEIGHT + 0.5, position.z); // Above marker
             sprite.scale.set(2, 2, 1); // Smaller sprite
             scene.add(sprite);
             
@@ -1369,8 +1384,8 @@
                 duration: 1.5,
                 ease: "power2.inOut",
                 onUpdate: function() {
-                    camera.lookAt(0, 0, 0);
-                    controls.target.set(0, 0, 0);
+                    camera.lookAt(0, ROAD_Y_POSITION, 0);
+                    controls.target.set(0, ROAD_Y_POSITION, 0);
                 }
             });
             
@@ -1476,12 +1491,22 @@
             // Update controls
             controls.update();
             
-            // Animate stop markers (location pins)
+            // Prevent camera from going below road level
+            if (camera.position.y < ROAD_Y_POSITION + 2) {
+                camera.position.y = ROAD_Y_POSITION + 2;
+            }
+            
+            // Prevent controls target from going too low
+            if (controls.target.y < ROAD_Y_POSITION) {
+                controls.target.y = ROAD_Y_POSITION;
+            }
+            
+            // Animate stop markers (location pins) - Bobbing animation above road
             stopMarkers.forEach((stop, index) => {
                 if (stop && stop.marker) {
                     // Gentle bobbing animation for location symbols
                     const bobHeight = Math.sin(time * 2 + index) * 0.05; // Smaller bobbing
-                    stop.marker.position.y = bobHeight;
+                    stop.marker.position.y = ROAD_Y_POSITION + bobHeight;
                     
                     // Rotate the symbol slightly for visual interest
                     stop.marker.rotation.y += delta * 0.5;
